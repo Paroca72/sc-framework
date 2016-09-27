@@ -1,0 +1,1376 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="12.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.50727</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{B0DABCBD-4DDE-41E7-A4C7-B985E6727D69}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>SCFramework</RootNamespace>
+    <AssemblyName>SCFramework</AssemblyName>
+    <MyType>Windows</MyType>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+    <OldToolsVersion>2.0</OldToolsVersion>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DocumentationFile>SCFramework.xml</DocumentationFile>
+    <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022,42353,42354,42355</NoWarn>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <DefineDebug>false</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DocumentationFile>SCFramework.xml</DocumentationFile>
+    <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022,42353,42354,42355</NoWarn>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="HtmlAgilityPack, Version=1.4.6.0, Culture=neutral, PublicKeyToken=bd319b19eaf3b43a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\Documents\Visual Studio 2013\Refrences\HtmlAgilityPack 1.4.9.5\lib\Net45\HtmlAgilityPack.dll</HintPath>
+    </Reference>
+    <Reference Include="ICSharpCode.SharpZipLib, Version=0.86.0.518, Culture=neutral, PublicKeyToken=1b03e6acf1164f73, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\Documents\Visual Studio 2013\Refrences\SharpZipLib 0.86.0\net-20\ICSharpCode.SharpZipLib.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.configuration" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.XML" />
+  </ItemGroup>
+  <ItemGroup>
+    <Import Include="Microsoft.VisualBasic" />
+    <Import Include="System" />
+    <Import Include="System.Collections" />
+    <Import Include="System.Collections.Generic" />
+    <Import Include="System.ComponentModel" />
+    <Import Include="System.Configuration" />
+    <Import Include="System.Data" />
+    <Import Include="System.Diagnostics" />
+    <Import Include="System.Drawing" />
+    <Import Include="System.Drawing.Imaging" />
+    <Import Include="System.Globalization" />
+    <Import Include="System.Net" />
+    <Import Include="System.Net.Mail" />
+    <Import Include="System.Security" />
+    <Import Include="System.Security.Permissions" />
+    <Import Include="System.Text" />
+    <Import Include="System.Text.RegularExpressions" />
+    <Import Include="System.Threading" />
+    <Import Include="System.Web" />
+    <Import Include="System.Web.UI" />
+    <Import Include="System.Web.UI.HtmlControls" />
+    <Import Include="System.Web.UI.WebControls" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Controls\Image\Image.vb" />
+    <Compile Include="Framework\Database\DbHelper.vb" />
+    <Compile Include="Framework\Database\DbHelperExtended.vb" />
+    <Compile Include="Framework\Base\MasterPage.vb">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Framework\Base\Page.vb">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Framework\Base\UserControl.vb">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Framework\Database\DbSqlBuilder.vb" />
+    <Compile Include="Framework\Global\Stats.vb" />
+    <Compile Include="Framework\System\Bridge.vb" />
+    <Compile Include="Framework\System\Cache.vb" />
+    <Compile Include="Framework\System\Files.vb" />
+    <Compile Include="Framework\System\Languages.vb" />
+    <Compile Include="Framework\System\Mails.vb" />
+    <Compile Include="Framework\System\Mime.vb" />
+    <Compile Include="Framework\System\Configuration.vb" />
+    <Compile Include="Framework\Users\UserInfo.vb" />
+    <Compile Include="Framework\Global\Crypt.vb" />
+    <Compile Include="Framework\Database\DbQuery.vb" />
+    <Compile Include="Framework\Global\Utils.vb" />
+    <Compile Include="Framework\Global\HTML.vb" />
+    <Compile Include="Framework\Global\Images.vb" />
+    <Compile Include="Framework\Global\LogFile.vb" />
+    <Compile Include="Framework\Global\ZipHelper.vb" />
+    <Compile Include="Framework\Users\Users.vb" />
+    <Compile Include="My Project\AssemblyInfo.vb" />
+    <Compile Include="My Project\Application.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Application.myapp</DependentUpon>
+    </Compile>
+    <Compile Include="My Project\Resources.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="My Project\Settings.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+    <Compile Include="Settings.vb" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="My Project\Resources.resx">
+      <Generator>VbMyResourcesResXFileCodeGenerator</Generator>
+      <CustomToolNamespace>My.Resources</CustomToolNamespace>
+      <SubType>Designer</SubType>
+      <LastGenOutput>Resources.Designer.vb</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="My Project\Application.myapp">
+      <Generator>MyApplicationCodeGenerator</Generator>
+      <LastGenOutput>Application.Designer.vb</LastGenOutput>
+    </None>
+    <None Include="My Project\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <CustomToolNamespace>My</CustomToolNamespace>
+      <LastGenOutput>Settings.Designer.vb</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_afghanistan.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_albania.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_algeria.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_american_samoa.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_andorra.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_angola.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_anguilla.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_antigua_and_barbuda.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_argentina.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_armenia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_aruba.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_australia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_austria.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_azerbaijan.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_bahamas.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_bahrain.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_bangladesh.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_barbados.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_belarus.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_belgium.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_belize.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_benin.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_bermuda.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_bhutan.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_bolivia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_bosnia_and_herzegovina.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_botswana.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_brazil.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_british_indian_ocean_territory.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_british_virgin_islands.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_brunei.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_bulgaria.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_burkina_faso.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_burma.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_burundi.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_cambodia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_cameroon.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_canada.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_cape_verde.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_cayman_islands.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_central_african_republic.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_chad.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_chile.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_china.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_colombia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_comoros.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_congo_democratic_republic.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_congo_republic.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_cook_islands.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_costa_rica.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_cote_divoire.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_croatia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_cuba.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_cyprus.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_czech_republic.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_denmark.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_djibouti.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_dominica.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_dominican_republic.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_east_timor.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_egypt.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_el_salvador.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_england.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_equador.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_equatorial_guinea.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_eritrea.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_estonia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_ethiopia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_falkland_islands.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_faroe_islands.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_fiji.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_finland.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_france.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_french_polynesia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_gabon.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_gambia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_georgia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_germany.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_ghana.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_gibraltar.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_great_britain.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_greece.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_greenland.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_grenada.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_guam.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_guatemala.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_guernsey.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_guinea.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_guinea_bissau.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_guyana.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_haiti.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_honduras.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_hong_kong.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_hungary.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_iceland.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_india.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_indonesia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_iran.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_iraq.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_ireland.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_isle_of_man.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_israel.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_italy.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_jamaica.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_japan.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_jersey.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_jordan.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_kazakhstan.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_kenya.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_kiribati.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_kuwait.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_kyrgyzstan.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_laos.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_latvia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_lebanon.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_lesotho.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_liberia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_libya.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_liechtenstein.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_lithuania.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_luxembourg.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_macau.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_macedonia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_madagascar.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_malawi.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_malaysia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_maledives.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_mali.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_malta.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_marshall_islands.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_martinique.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_mauretania.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_mauritius.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_mexico.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_micronesia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_moldova.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_monaco.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_mongolia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_montserrat.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_morocco.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_mozambique.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_namibia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_nauru.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_nepal.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_netherlands.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_netherlands_antilles.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_new_zealand.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_nicaragua.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_niger.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_nigeria.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_niue.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_norfolk_island.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_north_korea.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_northern_mariana_islands.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_norway.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_oman.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_pakistan.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_palau.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_panama.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_papua_new_guinea.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_paraquay.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_peru.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_philippines.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_pitcairn_islands.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_poland.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_portugal.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_puerto_rico.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_qatar.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_romania.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_russia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_rwanda.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_saint_helena.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_saint_kitts_and_nevis.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_saint_lucia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_saint_pierre_and_miquelon.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_saint_vincent_and_the_grenadines.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_samoa.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_san_marino.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_sao_tome_and_principe.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_saudi_arabia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_scotland.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_senegal.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_serbia_montenegro.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_seychelles.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_sierra_leone.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_singapore.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_slovakia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_slovenia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_solomon_islands.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_somalia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_south_africa.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_south_georgia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_south_korea.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_spain.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_sri_lanka.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_sudan.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_suriname.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_swaziland.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_sweden.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_switzerland.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_syria.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_taiwan.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_tajikistan.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_tanzania.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_thailand.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_tibet.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_togo.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_tonga.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_trinidad_and_tobago.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_tunisia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_turkey.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_turkmenistan.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_turks_and_caicos_islands.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_tuvalu.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_uganda.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_ukraine.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_united_arab_emirates.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_uruquay.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_usa.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_uzbekistan.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_vanuatu.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_vatican_city.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_venezuela.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_vietnam.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_virgin_islands.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_wales.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_wallis_and_futuna.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_yemen.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_zambia.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\flag_zimbabwe.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\go-next.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\go-previous.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\delete.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\empty.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_asp.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_avi.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_bat.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_bmp.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_css.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_gif.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_html.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_iso.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_jpg.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_mov.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_mp3.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_mp4.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_mpg.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_png.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_psd.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_rar.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_tiff.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_wav.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_wma.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_wmv.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_xml.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_zip.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\loading.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\edit.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_3dm.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_3ds.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_3g2.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_3gp.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_7z.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_aac.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_ai.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_aif.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_apk.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_app.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_asf.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_aspx.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_asx.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_bak.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_bin.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_cab.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_cad.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_cdr.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_cer.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_cfg.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_cfm.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_cgi.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_class.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_com.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_cpl.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_cpp.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_crx.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_csr.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_csv.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_cue.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_cur.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_dat.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_db2.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_dbf.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_dds.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_dem.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_dll.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_dmg.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_dmp.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_doc.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_docx.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_drv.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_dtd.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_dwg.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_dxf.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_elf.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_eps.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_exe.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_flv.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_fnt.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_fon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_gam.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_gbr.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_ged.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_gpx.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_gz.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_gzip.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_hqz.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_ibooks.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_icns.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_ico.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_ics.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_iff.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_indd.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_jar.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_js.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_jsp.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_key.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_kml.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_kmz.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_lnk.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_log.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_lua.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_m3u.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_m4a.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_m4v.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_macho.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_max.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_mdb.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_mdf.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_mid.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_mim.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_mpa.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_msg.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_msi.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_nes.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_obj.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_odb.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_odc.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_odf.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_odg.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_odi.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_odp.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_ods.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_odt.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_odx.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_ogg.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_otf.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_pages.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_pct.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_pdb.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_pdf.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_pif.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_pkg.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_pl.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_pps.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_ppt.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_pptx.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_ps.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_pub.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_py.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_ra.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_raw.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_rm.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_rom.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_rpm.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_rss.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_rtf.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_sav.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_sdf.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_sitx.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_sql.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_srt.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_svg.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_swf.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_sys.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_tar.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_tex.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_tga.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_thm.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_tmp.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_torrent.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_ttf.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_txt.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_uue.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_vb.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_vcd.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_vcf.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_vob.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_wpd.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_wps.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_wsf.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_xhtml.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_xlr.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_xls.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_xlsx.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\filetype_yuv.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\mime.txt" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.VisualBasic.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
