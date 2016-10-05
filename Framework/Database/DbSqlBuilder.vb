@@ -7,7 +7,7 @@
 ' Sql builder manager
 ' Version 5.0.0
 ' Created 17/09/2015
-' Updated 02/11/2015
+' Updated 03/10/2016
 '
 ' Integrazione: OleDb, Sql
 '
@@ -96,12 +96,22 @@ Public Class DbSqlBuilder
             Me.Add(Column, ComparerType.Equal, Value, True)
         End Sub
 
-        ' Add a list of clauses
+        ' Add a list of clauses defined as key and value pair
         Public Sub Add(Clauses As IDictionary(Of String, Object))
             ' Cycle all clause of list
             For Each Column As String In Clauses.Keys
                 ' Add
                 Me.Add(Column, ComparerType.Equal, Clauses(Column), True)
+            Next
+        End Sub
+
+        ' Add a list of clauses
+        Public Sub Add(Clauses() As Clauses, GroupAsAnd As Boolean)
+            ' Cycle all clauses
+            For Each Clause As Clauses In Clauses
+                ' Add the single clauses
+                If Not Utils.IsEmpty(Me.mSql) Then Me.mSql &= IIf(GroupAsAnd, " AND ", " OR ")
+                Me.mSql &= "(" & Clause.Sql & ")"
             Next
         End Sub
 
@@ -181,8 +191,8 @@ Public Class DbSqlBuilder
         ' Fix the quote
         Value = CStr(Value).Replace("'", "''")
 
-        ' Select the return value by provider type
-        Select Case Provider
+                ' Select the return value by provider type
+                Select Case Provider
             Case DbQuery.ProvidersList.OleDb : Return "'" & Value & "'"
             Case DbQuery.ProvidersList.SqlClient : Return "N'" & Value & "'"
         End Select

@@ -101,7 +101,8 @@
     <Compile Include="Framework\System\Mails.vb" />
     <Compile Include="Framework\System\Mime.vb" />
     <Compile Include="Framework\System\Configuration.vb" />
-    <Compile Include="Framework\Users\UserInfo.vb" />
+    <Compile Include="Framework\System\Translations.vb" />
+    <Compile Include="Framework\Users\User.vb" />
     <Compile Include="Framework\Global\Crypt.vb" />
     <Compile Include="Framework\Database\DbQuery.vb" />
     <Compile Include="Framework\Global\Utils.vb" />

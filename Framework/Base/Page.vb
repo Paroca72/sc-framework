@@ -62,6 +62,21 @@ Public Class Page
         Me.Header.Controls.Add(Meta)
     End Sub
 
+    ' Check if have a user request to change the current language
+    Public Sub CheckForUserRequestLanguage()
+        Try
+            ' Check in the query string if have the tag < language >
+            Dim Language As String = Trim("" & Bridge.Page.Request.QueryString(Languages.QUERYSTRING_TAG))
+            If Not String.IsNullOrEmpty(Language) Then
+                ' Set the current language
+                Languages.Instance.Current = Language
+            End If
+
+        Catch ex As Exception
+            ' Do nothing
+        End Try
+    End Sub
+
 #End Region
 
 #Region " PROPERTIES "
@@ -85,14 +100,14 @@ Public Class Page
 
 #Region " USER "
 
-    Public Property CurrentUser() As SCFramework.UserInfo
+    Public Property CurrentUser() As SCFramework.User
         Get
             If Session("CurrentUser") Is Nothing Then
-                Session("CurrentUser") = New SCFramework.UserInfo
+                Session("CurrentUser") = New SCFramework.User
             End If
-            Return CType(Session("CurrentUser"), SCFramework.UserInfo)
+            Return CType(Session("CurrentUser"), SCFramework.User)
         End Get
-        Set(ByVal Value As SCFramework.UserInfo)
+        Set(ByVal Value As SCFramework.User)
             Session("CurrentUser") = Value
         End Set
     End Property
@@ -134,49 +149,59 @@ Public Class Page
     End Sub
 
     Public Function Login(ByVal [Alias] As String, ByVal Password As String) As Byte
+        ' Define the result trigger
         Dim Result As LoginResult = LoginResult.Success
 
         If String.IsNullOrEmpty([Alias].Trim) Then Result = LoginResult.EmptyAlias
         If String.IsNullOrEmpty(Password.Trim) Then Result = LoginResult.EmptyPassword
 
-        Dim User As SCFramework.UserInfo = New SCFramework.UserInfo(Trim([Alias]), Trim(Password))
-        User.UpdateLastAccess()
+        ' Get the user by alias and password
+        Dim User As SCFramework.User = SCFramework.Users.Instance.GetUser(Trim([Alias]), Trim(Password))
 
-        If Not User.IsAutenticated Then
+        ' Check the access
+        If User Is Nothing OrElse Not User.IsAutenticated Then
             Result = LoginResult.WrongFields
+
         ElseIf Not User.IsActive Then
             Result = LoginResult.UserNotActive
+
         Else
             Me.CurrentUser = User
             Select Case User.Level
-                Case SCFramework.UserInfo.Levels.Administrator, _
-                     SCFramework.UserInfo.Levels.Manager
+                Case SCFramework.User.Levels.Administrator,
+                     SCFramework.User.Levels.Manager
                     ' OK
 
-                Case SCFramework.UserInfo.Levels.Buyer, _
-                     SCFramework.UserInfo.Levels.Dealer, _
-                     SCFramework.UserInfo.Levels.Reorder
+                Case SCFramework.User.Levels.Buyer,
+                     SCFramework.User.Levels.Dealer,
+                     SCFramework.User.Levels.Reorder
                     ' OK
 
-                Case SCFramework.UserInfo.Levels.Student, _
-                     SCFramework.UserInfo.Levels.Teacher
+                Case SCFramework.User.Levels.Student,
+                     SCFramework.User.Levels.Teacher
                     ' OK
 
-                Case SCFramework.UserInfo.Levels.Privileged
+                Case SCFramework.User.Levels.Privileged
                     ' OK
 
                 Case Else
                     Result = LoginResult.UncknowUserLevel
+
             End Select
         End If
 
+        ' Update the last access
+        User.LastAccess = Now
+        SCFramework.Users.Instance.Save(User)
+
+        ' Trace it and return
         Me.TraceAction("Login", Result <> LoginResult.Success, [Alias], Password)
         Return Result
     End Function
 
     Public Sub Logout()
         ' Resetta l'utente
-        Me.CurrentUser = New SCFramework.UserInfo()
+        Me.CurrentUser = New SCFramework.User()
 
         ' Ritorna alla pagina base
         Me.Response.Redirect("~/" & Configuration.Instance.BasePage)
@@ -212,8 +237,10 @@ Public Class Page
     End Sub
 
     Protected Overrides Sub OnInit(ByVal e As Global.System.EventArgs)
+        ' Postback
         ClientScript.GetPostBackEventReference(Me.Page, "")
-        Languages.CheckForUserRequestLanguage()
+        ' Check if have a user request to change the current language
+        Me.CheckForUserRequestLanguage()
     End Sub
 
 #End Region

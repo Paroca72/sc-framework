@@ -7,7 +7,7 @@
 ' Helper class to link to database (new from version 5.x)
 ' Version 5.0.0
 ' Created 10/08/2015
-' Updated 29/10/2015
+' Updated 04/10/2016
 '
 '*************************************************************************************************
 
@@ -29,8 +29,6 @@ Public MustInherit Class DbHelper
 #Region " CONSTRUCTOR "
 
     Public Sub New()
-        ' Check for database
-        Me.CheckDataBase()
         ' Analize
         Me.OnAnalizeTable()
     End Sub
@@ -38,12 +36,6 @@ Public MustInherit Class DbHelper
 #End Region
 
 #Region " PRIVATES "
-
-    ' Check for table existance inside the database
-    Private Sub CheckDataBase()
-        ' Check if the table exists
-
-    End Sub
 
     ' OleDb analisys 
     Private Sub OleDbAnalisys(Connection As DbConnection)

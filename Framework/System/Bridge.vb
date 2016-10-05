@@ -113,16 +113,16 @@ Public Class Bridge
         End If
     End Function
 
-    Public Shared Function CurrentUser() As UserInfo
+    Public Shared Function CurrentUser() As User
         If Bridge.Session Is Nothing OrElse Bridge.Session("CurrentUser") Is Nothing Then
             If Bridge.Session Is Nothing Then
-                Return New UserInfo()
+                Return New User()
             Else
-                Bridge.Session("CurrentUser") = New UserInfo()
+                Bridge.Session("CurrentUser") = New User()
                 Return Bridge.Session("CurrentUser")
             End If
         Else
-            Return CType(Bridge.Session("CurrentUser"), UserInfo)
+            Return CType(Bridge.Session("CurrentUser"), User)
         End If
     End Function
 
