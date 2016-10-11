@@ -7,7 +7,7 @@
 ' Sql builder manager
 ' Version 5.0.0
 ' Created 17/09/2015
-' Updated 03/10/2016
+' Updated 10/10/2016
 '
 ' Integrazione: OleDb, Sql
 '
@@ -20,118 +20,6 @@ Public Class DbSqlBuilder
     ' Constants
     Public Const QuotePrefix As String = "["
     Public Const QuoteSuffix As String = "]"
-
-#Region " CLAUSES "
-
-    ' Clause structure
-    Public Class Clauses
-
-        ' Enums
-        Public Enum ComparerType As Integer
-            Equal
-            Minor
-            MinorAndEqual
-            Major
-            MajorAndEqual
-            Different
-            [Like]
-            LikeStart
-            LikeEnd
-        End Enum
-
-        ' Holder
-        Private mSql As String = String.Empty
-
-        ' Contructor
-        Public Sub New()
-        End Sub
-
-        Public Sub New(Column As String, Value As Object)
-            Me.Add(Column, Value)
-        End Sub
-
-        Public Sub New(Clauses As IDictionary(Of String, Object))
-            Me.Add(Clauses)
-        End Sub
-
-        ' Add a clause
-        Public Sub Add(Column As String, Comparer As ComparerType, Value As Object, GroupAsAnd As Boolean)
-            ' Fix the particular case
-            If Comparer = ComparerType.Like Then
-                Value = String.Format("%{0}%", Value.ToString())
-            ElseIf Comparer = ComparerType.LikeStart Then
-                Value = String.Format("%{0}", Value.ToString())
-            ElseIf Comparer = ComparerType.LikeEnd Then
-                Value = String.Format("{0}%", Value.ToString())
-            End If
-
-            ' Convert the comparer to its string rappresentation
-            Dim ComparerToString As String = "="
-            Select Case Comparer
-                Case ComparerType.Different : ComparerToString = "<>"
-                Case ComparerType.Major : ComparerToString = ">"
-                Case ComparerType.MajorAndEqual : ComparerToString = ">="
-                Case ComparerType.Minor : ComparerToString = "<"
-                Case ComparerType.MinorAndEqual : ComparerToString = "<="
-            End Select
-
-            ' Fix the comparer in the case of null values
-            If Value Is Nothing OrElse IsDBNull(Value) Then
-                If Comparer = ComparerType.Equal Then ComparerToString = "IS"
-                If Comparer = ComparerType.Different Then ComparerToString = "IS NOT"
-            End If
-
-            ' Build the group clausole
-            If Not Utils.IsEmpty(Me.mSql) Then
-                ' Check for AND or OR
-                Me.mSql &= IIf(GroupAsAnd, " AND ", " OR ")
-            End If
-
-            ' Append the new clause
-            Me.mSql &= String.Format("{0} {1} {2}", DbSqlBuilder.Quote(Column), ComparerToString, DbSqlBuilder.Variant(Value))
-        End Sub
-
-        ' Add one clause using the default parameters
-        Public Sub Add(Column As String, Value As Object)
-            Me.Add(Column, ComparerType.Equal, Value, True)
-        End Sub
-
-        ' Add a list of clauses defined as key and value pair
-        Public Sub Add(Clauses As IDictionary(Of String, Object))
-            ' Cycle all clause of list
-            For Each Column As String In Clauses.Keys
-                ' Add
-                Me.Add(Column, ComparerType.Equal, Clauses(Column), True)
-            Next
-        End Sub
-
-        ' Add a list of clauses
-        Public Sub Add(Clauses() As Clauses, GroupAsAnd As Boolean)
-            ' Cycle all clauses
-            For Each Clause As Clauses In Clauses
-                ' Add the single clauses
-                If Not Utils.IsEmpty(Me.mSql) Then Me.mSql &= IIf(GroupAsAnd, " AND ", " OR ")
-                Me.mSql &= "(" & Clause.Sql & ")"
-            Next
-        End Sub
-
-        ' Get the builded sql
-        Public ReadOnly Property Sql As String
-            Get
-                Return Me.mSql
-            End Get
-        End Property
-
-        ' True if is empty
-        Public ReadOnly Property IsEmpty As Boolean
-            Get
-                Return Utils.IsEmpty(Me.mSql)
-            End Get
-        End Property
-
-    End Class
-
-#End Region
 
 #Region " PRIVATE "
 
@@ -176,8 +64,8 @@ Public Class DbSqlBuilder
 
 
     ' Format a string
-    Public Shared Function [String](ByVal Value As Object, _
-                                    Optional ByVal EmptyIsNULL As Boolean = True, _
+    Public Shared Function [String](ByVal Value As Object,
+                                    Optional ByVal EmptyIsNULL As Boolean = True,
                                     Optional ByVal Provider As DbQuery.ProvidersList = DbQuery.ProvidersList.Undefined) As String
         ' Check for return NULL
         If Value Is Nothing OrElse IsDBNull(Value) Then Return "NULL"
@@ -191,8 +79,8 @@ Public Class DbSqlBuilder
         ' Fix the quote
         Value = CStr(Value).Replace("'", "''")
 
-                ' Select the return value by provider type
-                Select Case Provider
+        ' Select the return value by provider type
+        Select Case Provider
             Case DbQuery.ProvidersList.OleDb : Return "'" & Value & "'"
             Case DbQuery.ProvidersList.SqlClient : Return "N'" & Value & "'"
         End Select
@@ -201,8 +89,8 @@ Public Class DbSqlBuilder
         Return String.Empty
     End Function
 
-    Public Shared Function [String](ByVal [Control] As WebControl, _
-                                    Optional ByVal EmptyIsNULL As Boolean = True, _
+    Public Shared Function [String](ByVal [Control] As WebControl,
+                                    Optional ByVal EmptyIsNULL As Boolean = True,
                                     Optional ByVal Provider As DbQuery.ProvidersList = DbQuery.ProvidersList.Undefined) As String
         Return [String](GetValue([Control]), EmptyIsNULL, Provider)
     End Function
@@ -220,8 +108,8 @@ Public Class DbSqlBuilder
             End If
 
             ' Check the object type and return its string rappresentation
-            If ((TypeOf Value Is Long) Or (TypeOf Value Is ULong)) Or _
-               ((TypeOf Value Is Integer) Or (TypeOf Value Is UInteger)) Or _
+            If ((TypeOf Value Is Long) Or (TypeOf Value Is ULong)) Or
+               ((TypeOf Value Is Integer) Or (TypeOf Value Is UInteger)) Or
                ((TypeOf Value Is Short) Or (TypeOf Value Is UShort)) Then
                 Return CLng(Value).ToString
             Else
@@ -240,8 +128,8 @@ Public Class DbSqlBuilder
 
 
     ' Format a date
-    Public Shared Function [Date](ByVal Value As Object, _
-                                  Optional ByVal Complete As Boolean = False, _
+    Public Shared Function [Date](ByVal Value As Object,
+                                  Optional ByVal Complete As Boolean = False,
                                   Optional ByVal Provider As DbQuery.ProvidersList = DbQuery.ProvidersList.Undefined) As String
         Try
             ' Get the current culture code
@@ -253,7 +141,7 @@ Public Class DbSqlBuilder
             End If
 
             ' Check for null value
-            If (IsDBNull(Value) OrElse Value Is Nothing) OrElse _
+            If (IsDBNull(Value) OrElse Value Is Nothing) OrElse
                (IsDate(Value) AndAlso CDate(Value) = Date.MinValue) Then
                 Throw New Exception
             End If
@@ -295,15 +183,15 @@ Public Class DbSqlBuilder
         End Try
     End Function
 
-    Public Shared Function [Date](ByVal [Control] As WebControl, _
-                                  Optional ByVal Complete As Boolean = False, _
+    Public Shared Function [Date](ByVal [Control] As WebControl,
+                                  Optional ByVal Complete As Boolean = False,
                                   Optional ByVal Provider As DbQuery.ProvidersList = DbQuery.ProvidersList.Undefined) As String
         Return [Date](GetValue([Control]), Complete, Provider)
     End Function
 
 
     ' Format a boolean
-    Public Shared Function [Boolean](ByVal Value As Object, _
+    Public Shared Function [Boolean](ByVal Value As Object,
                                      Optional ByVal Provider As DbQuery.ProvidersList = DbQuery.ProvidersList.Undefined) As String
         ' Check for null value
         If Value Is Nothing Or IsDBNull(Value) Then Return "NULL"
@@ -321,7 +209,7 @@ Public Class DbSqlBuilder
         End Select
     End Function
 
-    Public Shared Function [Boolean](ByVal [Control] As WebControl, _
+    Public Shared Function [Boolean](ByVal [Control] As WebControl,
                                      Optional ByVal Provider As DbQuery.ProvidersList = DbQuery.ProvidersList.Undefined) As String
         Return [Boolean](GetValue([Control]), Provider)
     End Function
@@ -433,7 +321,7 @@ Public Class DbSqlBuilder
 #Region " BUILDER "
 
     ' Build a generic select sql command
-    Public Shared Function BuildSelectCommand(TableName As String, Fields As IList(Of String), Clause As Clauses) As String
+    Public Shared Function BuildSelectCommand(TableName As String, Fields As IList(Of String), Clauses As DbClauses) As String
         ' Build the value list
         Dim FieldList As String = String.Empty
         For Each Field As String In Fields
@@ -443,13 +331,13 @@ Public Class DbSqlBuilder
         Next
 
         ' Build the sql command
-        Dim Sql As String = String.Format("SELECT {0} FROM {1} ", _
-                                          IIf(String.IsNullOrEmpty(FieldList), "*", FieldList), _
+        Dim Sql As String = String.Format("SELECT {0} FROM {1} ",
+                                          IIf(String.IsNullOrEmpty(FieldList), "*", FieldList),
                                           DbSqlBuilder.Quote(TableName))
 
         ' Add the where clausole only if have
-        If Not Clause.IsEmpty Then
-            Sql &= String.Format("WHERE {0} ", Clause.Sql)
+        If Not Clauses.IsEmpty Then
+            Sql &= String.Format("WHERE {0} ", Clauses.ForSql)
         End If
 
         ' Return the sql command
@@ -473,21 +361,21 @@ Public Class DbSqlBuilder
         Next
 
         ' Define the query
-        Return String.Format("INSERT INTO {0} ({1}) VALUES ({2})", _
-                             DbSqlBuilder.Quote(TableName), _
-                             FieldList, _
+        Return String.Format("INSERT INTO {0} ({1}) VALUES ({2})",
+                             DbSqlBuilder.Quote(TableName),
+                             FieldList,
                              ValueList)
     End Function
 
     ' Build a generic update sql command
-    Public Shared Function BuildUpdateCommand(TableName As String, Values As IDictionary(Of String, Object), Clause As Clauses) As String
+    Public Shared Function BuildUpdateCommand(TableName As String, Values As IDictionary(Of String, Object), Clauses As DbClauses) As String
         ' Build the value list
         Dim ValuesList As String = String.Empty
         For Each Key As String In Values.Keys
             ' Build the field/value list
             If Not String.IsNullOrEmpty(ValuesList) Then ValuesList &= ", "
-            ValuesList &= String.Format("{0} = {1}", _
-                                        DbSqlBuilder.Quote(Key), _
+            ValuesList &= String.Format("{0} = {1}",
+                                        DbSqlBuilder.Quote(Key),
                                         DbSqlBuilder.Variant(Values(Key)))
         Next
 
@@ -499,8 +387,8 @@ Public Class DbSqlBuilder
         End If
 
         ' Add the where clausole only if have
-        If Not Clause.IsEmpty Then
-            Sql &= String.Format("WHERE {0} ", Clause.Sql)
+        If Not Clauses.IsEmpty Then
+            Sql &= String.Format("WHERE {0} ", Clauses.ForSql)
         End If
 
         ' Return the sql command
@@ -508,13 +396,13 @@ Public Class DbSqlBuilder
     End Function
 
     ' Generic delete command
-    Public Shared Function BuildDeleteCommand(TableName As String, Clause As Clauses) As String
+    Public Shared Function BuildDeleteCommand(TableName As String, Clauses As DbClauses) As String
         ' Build the sql command
         Dim Sql As String = String.Format("DELETE FROM {0} ", DbSqlBuilder.Quote(TableName))
 
         ' Add the where clausole only if have
-        If Not Clause.IsEmpty Then
-            Sql &= String.Format("WHERE {0} ", Clause.Sql)
+        If Not Clauses.IsEmpty Then
+            Sql &= String.Format("WHERE {0} ", Clauses.ForSql)
         End If
 
         ' Return the sql command

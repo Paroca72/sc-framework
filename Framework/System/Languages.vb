@@ -23,6 +23,7 @@ Public Class Languages
     ' The data source locker
     Private DataSourceLocker As Object = New Object()
 
+
 #Region " STATIC "
 
     ' Static instance holder
@@ -62,13 +63,15 @@ Public Class Languages
     Private Function GetDefaultLanguage() As String
         ' Lock the data source
         SyncLock Me.DataSourceLocker
-            ' Cycle all languages rows
-            For Each Row As DataRow In Me.DataSource.Rows
-                ' Check if default exit
-                If CBool(Row!ISDEFAULT) And Not IsDBNull(Row!CODE) Then
-                    Return CStr(Row!CODE)
-                End If
-            Next
+            ' Find the row
+            Dim Row = (From CurrentRow As DataRow In Me.DataSource.AsEnumerable()
+                       Where CurrentRow!ISDEFAULT = True And Not IsDBNull(CurrentRow!CODE)
+                       Select CurrentRow).FirstOrDefault()
+
+            ' If exists return the code
+            If Row IsNot Nothing Then
+                Return Row!CODE
+            End If
         End SyncLock
 
         ' If not found throw an exeception
@@ -116,25 +119,18 @@ Public Class Languages
 
     ' Check if the code exists in my database
     Public Function Exists(Code As String) As Boolean
-        ' Cycle all languages row
-        For Each Row As DataRow In Me.DataSource.Rows
-            ' If exists exit from the cycle after set the trigger
-            If Not IsDBNull(Row!CODE) AndAlso CStr(Code).ToLower = Code.ToLower Then
-                Return True
-            End If
-        Next
-
-        ' Else
-        Return False
+        ' Return true if the code exists in the data source
+        Return (From Row As DataRow In Me.DataSource.AsEnumerable
+                Where Not IsDBNull(Row!CODE) AndAlso CStr(Code).ToLower = Code.ToLower
+                Select Row) _
+            .FirstOrDefault Is Nothing
     End Function
 
     ' Get all languages code
     Public ReadOnly Property AllCodes() As String()
         Get
-            ' Convert to array list
-            Dim List As ArrayList = SCFramework.Utils.ToArrayList(Me.DataSource, "CODE")
-            ' Convert to array of string
-            Return List.ToArray(GetType(System.String))
+            Return (From Row As DataRow In Me.DataSource.AsEnumerable
+                    Select Row!CODE).ToArray()
         End Get
     End Property
 
@@ -195,37 +191,24 @@ Public Class Languages
 
     ' Get the image that rappresenting the language
     Public Function GetFlag(Code As String) As Bitmap
-        ' Find culture object from the code
+        ' Find culture object from the code and create a relation name with the resource file
         Dim Culture As Globalization.CultureInfo = Globalization.CultureInfo.CreateSpecificCulture(Code)
-        ' By the name create a relation name with the resource file
         Dim ResourceName As String = String.Format("flag_{0}", Me.FixCultureName(Culture.EnglishName.ToLower))
+
         ' Retrieve from resources the bitmap object
         Return My.Resources.ResourceManager.GetObject(ResourceName)
     End Function
 
     ' Get the server available culture list
-    Public Shared Function GetAllCulturesCode() As ArrayList
+    Public Shared Function GetAllCulturesCode() As String()
         ' Get all cultures installed on server
         Dim AllCulture As Globalization.CultureInfo() = Globalization.CultureInfo.GetCultures(CultureTypes.AllCultures)
 
-        ' Convert the list in an array list
-        Dim List As ArrayList = New ArrayList
-        ' Cycle all cultures
-        For Each Culture As Globalization.CultureInfo In AllCulture
-            ' Check if the name is empty
-            If Not String.IsNullOrEmpty(Culture.Name) Then
-                ' If the list still not contain the name
-                If Not List.Contains(Culture.TextInfo.CultureName) Then
-                    ' Add the name to the list
-                    List.Add(Culture.TextInfo.CultureName)
-                End If
-            End If
-        Next
-        ' Sort the list
-        List.Sort()
-
-        ' Retrun
-        Return List
+        ' Select all Name sorted and not duplicated and return the list
+        Return (From Culture As Globalization.CultureInfo In AllCulture
+                Where Not String.IsNullOrEmpty(Culture.Name)
+                Order By Culture.Name
+                Select Culture.Name).Distinct().ToArray()
     End Function
 
 #End Region
@@ -261,7 +244,7 @@ Public Class Languages
 
         Try
             ' Alter the translation table
-            Dim Alter As String = "ALTER TABLE [" & Translations.DATABASE_TABLE_NAME & "] " &
+            Dim Alter As String = "ALTER TABLE [" & Translations.Instance.GetTableName & "] " &
                                   "ADD [" & Code & "] NTEXT"
             Query.Exec(Alter)
 
@@ -301,11 +284,13 @@ Public Class Languages
 
         Try
             ' Create the alter translation table
-            Dim Alter As String = "ALTER TABLE [" & Translations.DATABASE_TABLE_NAME & "] " &
+            Dim Alter As String = "ALTER TABLE [" & Translations.Instance.GetTableName & "] " &
                                   "DROP COLUMN [" & Code & "]"
             Query.Exec(Alter)
 
-            ' Find the row and if exists delete it
+            ' Find the row and if exists delete it.
+            ' I could use LINQ but in this case is more simple with the standard research because I must find one row using the primary key.
+            ' The datatable, by default, was created in ignore case-sensitive for the string comparison so I don't take care of the "code" status.
             Dim Row As DataRow = Me.DataSource.Rows.Find(Code)
             If Row IsNot Nothing Then Row.Delete()
 
@@ -326,6 +311,8 @@ Public Class Languages
     ' Update a language record
     Public Shadows Sub Update(Code As String, Title As String, Visible As Boolean)
         ' Find the row and if exists delete it
+        ' I could use LINQ but in this case is more simple with the standard research because I must find one row using the primary key.
+        ' The datatable, by default, was created in ignore case-sensitive for the string comparison so I don't take care of the "code" status.
         Dim Row As DataRow = Me.DataSource.Rows.Find(Code)
         If Row IsNot Nothing Then
             Row!TITLE = Title

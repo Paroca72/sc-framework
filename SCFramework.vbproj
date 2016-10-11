@@ -50,6 +50,7 @@
     <Reference Include="System" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Extensions" />
@@ -67,6 +68,7 @@
     <Import Include="System.Drawing" />
     <Import Include="System.Drawing.Imaging" />
     <Import Include="System.Globalization" />
+    <Import Include="System.Linq" />
     <Import Include="System.Net" />
     <Import Include="System.Net.Mail" />
     <Import Include="System.Security" />
@@ -81,6 +83,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controls\Image\Image.vb" />
+    <Compile Include="Framework\Database\DbClauses.vb" />
     <Compile Include="Framework\Database\DbHelper.vb" />
     <Compile Include="Framework\Database\DbHelperExtended.vb" />
     <Compile Include="Framework\Base\MasterPage.vb">
@@ -96,6 +99,7 @@
     <Compile Include="Framework\Global\Stats.vb" />
     <Compile Include="Framework\System\Bridge.vb" />
     <Compile Include="Framework\System\Cache.vb" />
+    <Compile Include="Framework\DataSource\DataSourceHelper.vb" />
     <Compile Include="Framework\System\Files.vb" />
     <Compile Include="Framework\System\Languages.vb" />
     <Compile Include="Framework\System\Mails.vb" />

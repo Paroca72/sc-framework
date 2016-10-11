@@ -1,5 +1,3 @@
-Imports System.Data.Common
-
 '*************************************************************************************************
 ' 
 ' [SCFramework]
@@ -9,12 +7,14 @@ Imports System.Data.Common
 ' Database query manager
 ' Versione 5.0.0
 '
-' Created --/--/----
-' Updated 05/11/2015
+' Created 05/11/2015
+' Updated 11/10/2016
 '
 ' Integration: SqlClient, OleDB
 '
 '*************************************************************************************************
+
+Imports System.Data.Common
 
 
 ' Classe Query
@@ -236,7 +236,7 @@ Public Class DbQuery
     ' Start a transaction
     Public Sub StartTransaction()
         ' Check for the connection available
-        If Me.mConnection IsNot Nothing Then
+        If Me.mConnection IsNot Nothing And Me.mTransaction Is Nothing Then
             ' Open the connection to the database
             Me.mConnection.Open()
             ' Hold the transaction reference
@@ -264,6 +264,11 @@ Public Class DbQuery
             Me.mConnection.Close()
         End If
     End Sub
+
+    ' Return true if a transaction is already started
+    Public Function InTransaction() As Boolean
+        Return Me.mTransaction IsNot Nothing
+    End Function
 
     ' Shortcut to commint
     Public Sub CommitTransaction()
@@ -386,13 +391,13 @@ Public Class DbQuery
     End Function
 
     ' Generic update command
-    Public Function Update(TableName As String, Values As Hashtable, Clause As DbSqlBuilder.Clauses) As Long
+    Public Function Update(TableName As String, Values As Hashtable, Clause As SCFramework.DbClauses) As Long
         ' Execute the query command
         Return Me.Exec(DbSqlBuilder.BuildUpdateCommand(TableName, Values, Clause), True)
     End Function
 
     ' Generic delete command
-    Public Function Delete(TableName As String, Clause As DbSqlBuilder.Clauses) As Long
+    Public Function Delete(TableName As String, Clause As SCFramework.DbClauses) As Long
         ' Execute the query command
         Return Me.Exec(DbSqlBuilder.BuildDeleteCommand(TableName, Clause), True)
     End Function
@@ -433,7 +438,7 @@ Public Class DbQuery
     End Function
 
     ' Create a sql command and put the result inside a datatable
-    Public Function Table(TableName As String, Fields As ICollection, Clauses As DbSqlBuilder.Clauses) As DataTable
+    Public Function Table(TableName As String, Fields As ICollection, Clauses As SCFramework.DbClauses) As DataTable
         ' Execute the query command
         Return Me.Table(DbSqlBuilder.BuildSelectCommand(TableName, Fields, Clauses), TableName)
     End Function
@@ -457,13 +462,13 @@ Public Class DbQuery
     End Function
 
     ' Execute a sql command and put the result inside a hashtable
-    Public Function HashTable(ByVal Sql As String, ByVal KeyField As String, ByVal ValueField As String) As Hashtable
+    Public Function Dictionary(ByVal Sql As String, ByVal KeyField As String, ByVal ValueField As String) As Dictionary(Of Object, Object)
         Dim Source As DataTable = Me.Table(Sql)
-        Return SCFramework.Utils.ToHashTable(Source, KeyField, ValueField)
+        Return SCFramework.Utils.DataTable.ToDictionary(Source, KeyField, ValueField)
     End Function
 
     ' Execute a sql command and put the result inside a arraylist
-    Public Function ArrayList(ByVal Sql As String, Optional ByVal Field As String = Nothing) As ArrayList
+    Public Function Array(ByVal Sql As String, Optional ByVal Field As String = Nothing) As Object()
         ' Get the source
         Dim Source As DataTable = Me.Table(Sql)
 
@@ -473,7 +478,7 @@ Public Class DbQuery
         End If
 
         ' Return the array list
-        Return SCFramework.Utils.ToArrayList(Source, Field)
+        Return SCFramework.Utils.DataTable.ToArray(Source, Field)
     End Function
 
     ' Update the database

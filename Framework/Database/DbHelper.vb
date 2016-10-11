@@ -1,7 +1,7 @@
 ﻿'*************************************************************************************************
 ' 
 ' [SCFramework]
-' DatabaseBaseTableHelper  
+' DbHelper  
 ' by Samuele Carassai
 '
 ' Helper class to link to database (new from version 5.x)
@@ -22,8 +22,8 @@ Public MustInherit Class DbHelper
     Private mAutoNumberColumns As List(Of String) = Nothing
     Private mWritableColumns As List(Of String) = Nothing
 
-    ' Subordinates
     Private mSubordinates As List(Of DbHelper) = Nothing
+    Private mSafety As Boolean = True
 
 
 #Region " CONSTRUCTOR "
@@ -43,18 +43,19 @@ Public MustInherit Class DbHelper
         Dim CustomConnection As OleDb.OleDbConnection = CType(Connection, OleDb.OleDbConnection)
 
         ' Primary keys
-        Dim Table As DataTable = CustomConnection.GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Primary_Keys, _
+        Dim Table As DataTable = CustomConnection.GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Primary_Keys,
                                                                       New Object() {Nothing, Nothing, Me.GetTableName()})
         For Each Row As DataRow In Table.Rows
+            ' TODO: understand if automunber
             mPrimaryKeysColumns.Add(Row!COLUMN_NAME)
         Next
 
         ' Autonumber and Writable
-        Table = CustomConnection.GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Columns, _
+        Table = CustomConnection.GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Columns,
                                                      New Object() {Nothing, Nothing, Me.GetTableName(), Nothing})
         For Each Row As DataRow In Table.Rows
             ' Auto Number
-            If Row!DATA_TYPE = OleDb.OleDbType.Integer AndAlso _
+            If Row!DATA_TYPE = OleDb.OleDbType.Integer AndAlso
                Row!COLUMN_FLAGS = 90 Then
                 Me.mAutoNumberColumns.Add(Row!COLUMN_NAME)
             End If
@@ -91,23 +92,6 @@ Public MustInherit Class DbHelper
         Next
     End Sub
 
-    ' Extract the key pairs from a datarow
-    Private Function ExtractLocalKeysPairs(Row As DataRow) As Hashtable
-        ' Holder
-        Dim Values As Hashtable = New Hashtable()
-
-        ' Cycle all primary keys list
-        For Each Key As String In Me.mPrimaryKeysColumns
-            ' If exists add the key and the value at the list
-            If Row.Table.Columns.Contains(Key) Then
-                Values.Add(Key, Row(Key))
-            End If
-        Next
-
-        ' Return the list
-        Return Values
-    End Function
-
     ' Extract only the writable columns
     Private Function FilterForWritableColumns(Source As Hashtable) As Hashtable
         ' Holder
@@ -130,9 +114,9 @@ Public MustInherit Class DbHelper
 #Region " PROTECTED "
 
     ' Convert a single value in a pair value using the primary key as pair key
-    Protected Function ToClauses(Value As Long) As DbSqlBuilder.Clauses
+    Protected Function ToClauses(Value As Long) As SCFramework.DbClauses
         ' Define the where filter
-        Dim Clauses As DbSqlBuilder.Clauses = New DbSqlBuilder.Clauses()
+        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
 
         ' Check if have at least one primary key
         If Me.mPrimaryKeysColumns.Count > 0 Then
@@ -143,44 +127,12 @@ Public MustInherit Class DbHelper
         Return Clauses
     End Function
 
-    ' Get the data table filtered by where clausole
-    Protected Overridable Function GetSource(Clauses As DbSqlBuilder.Clauses) As DataTable
-        ' Source
-        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
-
-        ' Primary key
-        If mPrimaryKeysColumns.Count > 0 Then
-            SCFramework.Utils.SetPrimaryKeyColumns(Source, Me.mPrimaryKeysColumns.ToArray)
-        End If
-
-        ' Auto number
-        If mAutoNumberColumns.Count > 0 Then
-            SCFramework.Utils.SetAutoIncrementColumns(Source, Me.mAutoNumberColumns.ToArray)
-        End If
-
-        Return Source
-    End Function
-
     ' Delete command
-    Protected Overridable Function Delete(Clauses As DbSqlBuilder.Clauses, Optional Safety As Boolean = True) As Long
+    Protected Overridable Function Delete(Clauses As SCFramework.DbClauses) As Long
         ' Check for safety
-        If (Safety) And (Clauses Is Nothing OrElse Clauses.IsEmpty) Then
+        If (Me.mSafety) And (Clauses Is Nothing OrElse Clauses.IsEmpty) Then
             Throw New Exception("This command will delete all row in the table!")
         End If
-
-        ' Extract all the rows to delete
-        Dim RowsToDelete As DataTable = Me.GetSource(Clauses)
-
-        ' Cycle subortdinates
-        For Each Subordinate As DbHelper In Me.mSubordinates
-            ' Cycle rows and for each row to delete extract the pairs key
-            For Each Row As DataRow In RowsToDelete.Rows
-                ' Exctract the current primary keys
-                Dim LocalKeys As Hashtable = Me.ExtractLocalKeysPairs(Row)
-                ' Apply delete with the new clauses
-                Subordinate.Delete(New DbSqlBuilder.Clauses(LocalKeys))
-            Next
-        Next
 
         ' Execute the command to delete
         Return SCFramework.Bridge.Query.Delete(Me.GetTableName(), Clauses)
@@ -192,9 +144,7 @@ Public MustInherit Class DbHelper
     End Function
 
     ' Update command
-    Protected Overridable Function Update(Values As IDictionary(Of String, Object), _
-                                          Clauses As DbSqlBuilder.Clauses, _
-                                          Optional Safety As Boolean = True) As Long
+    Protected Overridable Function Update(Values As IDictionary(Of String, Object), Clauses As SCFramework.DbClauses) As Long
         ' Holders
         Dim UpdateFields As Hashtable = New Hashtable()
 
@@ -208,7 +158,7 @@ Public MustInherit Class DbHelper
         Next
 
         ' Check for safety
-        If Safety And Clauses.IsEmpty Then
+        If (Me.Safety) And (Clauses Is Nothing OrElse Clauses.IsEmpty) Then
             Throw New Exception("This command will update all row in the table!")
         End If
 
@@ -218,43 +168,36 @@ Public MustInherit Class DbHelper
 
 #End Region
 
-#Region " SUBORDINATES "
-
-    Public Function FindSubordinate(TableName As String) As DbHelper
-        ' Cycle all subortdinates
-        For Each Subordinate As DbHelper In Me.mSubordinates
-            ' Compare the table name
-            If String.Compare(Subordinate.GetTableName(), TableName, True) Then
-                Return Subordinate
-            End If
-        Next
-        ' Not find
-        Return Nothing
-    End Function
-
-    Public Sub AddSubordinate(Subordinate As DbHelper)
-        Me.mSubordinates.Add(Subordinate)
-    End Sub
-
-#End Region
-
 #Region " PROPERTIES "
 
+    ' The primary key columns list
     Public ReadOnly Property PrimaryKeys As List(Of String)
         Get
             Return Me.mPrimaryKeysColumns
         End Get
     End Property
 
+    ' The autonumber columns list
     Public ReadOnly Property AutoNumbers As List(Of String)
         Get
             Return Me.mAutoNumberColumns
         End Get
     End Property
 
+    ' The writable column list
     Public ReadOnly Property WritableColumns As List(Of String)
         Get
             Return Me.mWritableColumns
+        End Get
+    End Property
+
+    ' Set the dafety checker
+    Public Property Safety As Boolean
+        Set(Value As Boolean)
+            Me.mSafety = Value
+        End Set
+        Get
+            Return Me.mSafety
         End Get
     End Property
 
@@ -293,11 +236,6 @@ Public MustInherit Class DbHelper
             Connection.Close()
         End If
     End Sub
-
-    ' Get all row from this table
-    Public Overridable Function GetSource() As DataTable
-        Return Me.GetSource(New DbSqlBuilder.Clauses())
-    End Function
 
 #End Region
 

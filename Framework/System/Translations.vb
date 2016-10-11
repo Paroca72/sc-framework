@@ -13,108 +13,53 @@
 
 
 Public Class Translations
+    Inherits DbHelper
 
-    ' The relative database table name
-    Public Const DATABASE_TABLE_NAME As String = "SYS_TRANSLATIONS"
-    ' Constant session key for the current user translation
-    Private Const CURRENT_USER_TRANSLATIONS_SESSION_KEY As String = "$SCFramework$Translations$List"
+    ' Hold the data table source
+    Private DataSource As DataTable = Nothing
+    ' The data source locker
+    Private DataSourceLocker As Object = New Object()
 
 
-#Region " PRIVATE "
+#Region " STATIC "
 
-    ' Get all translation and store it in the user session
-    Private Shared Function GetTranslationsList() As Hashtable
-        ' Create the source holder
-        Dim Source As Hashtable = Nothing
+    ' Static instance holder
+    Private Shared mInstance As Translations = Nothing
 
-        ' Check if the session is available
-        If Bridge.Session Is Nothing OrElse
-            Bridge.Session(Translations.CURRENT_USER_TRANSLATIONS_SESSION_KEY) Is Nothing Then
-            ' Get thr current language details
-            Dim Current As String = String.Format("[{0}]", Languages.Current)
-            Dim [Default] As String = String.Format("[{0}]", Languages.Default)
-
-            ' Create the query
-            ' TODO
-            'Dim SQL As String = "SELECT [LABEL], " & _
-            '                           "(" & SCFramework.DbSqlBuilder.IsNULL(Current, [Default]) & ") AS [VALUE] " & _
-            '                    "FROM [" & Translations.DATABASE_TABLE_NAME & "]"
-            '' Get the list
-            'Source = Bridge.Query.HashTable(SQL, "LABEL", "VALUE")
-        End If
-
-        ' Check if the session is available
-        If Bridge.Session Is Nothing Then
-            Return Source
-        Else
-            ' Check if the source is loaded
-            If Source IsNot Nothing Then
-                ' Save the list in the current user session
-                Bridge.Session(Translations.CURRENT_USER_TRANSLATIONS_SESSION_KEY) = Source
+    ' Instance property
+    Public Shared ReadOnly Property Instance As Translations
+        Get
+            ' Check if null
+            If Translations.mInstance Is Nothing Then
+                Translations.mInstance = New Translations()
             End If
 
-            ' Return the list
-            Return Bridge.Session(Translations.CURRENT_USER_TRANSLATIONS_SESSION_KEY)
-        End If
-    End Function
+            ' Return the static instance
+            Return Translations.mInstance
+        End Get
+    End Property
 
+#End Region
 
-    ' Check if translation already exists
-    Private Shared Function Exists(Label As String) As Boolean
-        ' Get translations and check
-        Dim List As Hashtable = Translations.GetTranslationsList()
-        Return List.ContainsKey(Label)
-    End Function
+#Region " CONSTRUCTOR AND OVERRIDES "
 
-
-    ' Check the label
-    Private Shared Sub CheckLabel(Label As String)
-        If String.IsNullOrEmpty(Label) Then
-            Throw New Exception("The label cannot be empty!")
-        End If
+    Public Sub New()
+        ' Get the datatable
+        Me.DataSource = Me.GetSource()
     End Sub
 
-
-    ' Check if some translations is lost
-    Private Shared Function CheckForLostTranslation(Details As DataRow)
-        ' Check for null value
-        If Details IsNot Nothing Then
-            ' Cycle all languages code inside the table
-            For Each Code As String In Me.AllCodes
-                ' Check if the column exists
-                If Details.Table.Columns.Contains(Code) Then
-                    ' Check if the translation is empty
-                    If String.IsNullOrEmpty(Details(Code)) Then
-                        ' Some is lost
-                        Return True
-                    End If
-                End If
-            Next
-        End If
-
-        ' Have all translations
-        Return False
+    Public Overrides Function GetTableName() As String
+        Return "SYS_TRANSLATIONS"
     End Function
 
 #End Region
 
+#Region " PRIVATE "
+
+
+#End Region
+
 #Region " DATABASE INTERFACE "
-
-    ' Get the datasource from the database table
-    Public Shared Function GetDataSource() As DataTable
-        ' Create the sql command
-        Dim SQL As String = "SELECT * " &
-                            "FROM [" & Translations.DATABASE_TABLE_NAME & "] " &
-                            "WHERE [INSERT_DATE] IS NULL"
-        ' Get the source
-        Dim Source As DataTable = Bridge.Query.Table(SQL, Translations.DATABASE_TABLE_NAME)
-        ' Fix the primary key
-        SCFramework.Utils.SetPrimaryKeyColumns(Source, "LABEL")
-
-        ' Return 
-        Return Source
-    End Function
-
 
     ' Add a new record in the database
     Private Shared Sub AddToDatabase(Label As String, Values As Hashtable, IsTemporary As Boolean)

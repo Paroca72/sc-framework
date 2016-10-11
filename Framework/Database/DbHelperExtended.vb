@@ -1,7 +1,7 @@
 ﻿'*************************************************************************************************
 ' 
 ' [SCFramework]
-' DatabaseTableHelper  
+' DbHelperExtended  
 ' by Samuele Carassai
 '
 ' Extend the helper class to link to database (new from version 5.x)
