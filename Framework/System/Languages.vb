@@ -7,21 +7,16 @@
 ' Classe di gestione lingue
 ' Version 5.0.0
 ' Created --/--/----
-' Updated 05/10/2016
+' Updated 11/10/2016
 '
 '*************************************************************************************************
 
 
 Public Class Languages
-    Inherits DbHelper
+    Inherits DataSourceHelper
 
     ' The user request query-string tag
     Public Const QUERYSTRING_TAG As String = "Language"
-
-    ' Hold the data table source
-    Private DataSource As DataTable = Nothing
-    ' The data source locker
-    Private DataSourceLocker As Object = New Object()
 
 
 #Region " STATIC "
@@ -44,12 +39,7 @@ Public Class Languages
 
 #End Region
 
-#Region " CONSTRUCTOR AND OVERRIDES "
-
-    Public Sub New()
-        ' Get the datatable
-        Me.DataSource = Me.GetSource()
-    End Sub
+#Region " OVERRIDES "
 
     Public Overrides Function GetTableName() As String
         Return "SYS_LANGUAGES"
@@ -64,14 +54,12 @@ Public Class Languages
         ' Lock the data source
         SyncLock Me.DataSourceLocker
             ' Find the row
-            Dim Row = (From CurrentRow As DataRow In Me.DataSource.AsEnumerable()
+            Dim Row = (From CurrentRow As DataRow In Me.Source.AsEnumerable()
                        Where CurrentRow!ISDEFAULT = True And Not IsDBNull(CurrentRow!CODE)
                        Select CurrentRow).FirstOrDefault()
 
             ' If exists return the code
-            If Row IsNot Nothing Then
-                Return Row!CODE
-            End If
+            If Row IsNot Nothing Then Return Row!CODE
         End SyncLock
 
         ' If not found throw an exeception
@@ -86,7 +74,7 @@ Public Class Languages
             If Not Me.Exists(Code) Then Exit Sub
 
             ' Cycle all languages rows and fix the default
-            For Each Row As DataRow In Me.DataSource.Rows
+            For Each Row As DataRow In Me.Source.Rows
                 ' Check if default
                 Row!ISDEFAULT = Not IsDBNull(Row!CODE) AndAlso CStr(Code).ToLower = Code.ToLower
             Next
@@ -120,7 +108,7 @@ Public Class Languages
     ' Check if the code exists in my database
     Public Function Exists(Code As String) As Boolean
         ' Return true if the code exists in the data source
-        Return (From Row As DataRow In Me.DataSource.AsEnumerable
+        Return (From Row As DataRow In Me.Source.AsEnumerable
                 Where Not IsDBNull(Row!CODE) AndAlso CStr(Code).ToLower = Code.ToLower
                 Select Row) _
             .FirstOrDefault Is Nothing
@@ -129,8 +117,7 @@ Public Class Languages
     ' Get all languages code
     Public ReadOnly Property AllCodes() As String()
         Get
-            Return (From Row As DataRow In Me.DataSource.AsEnumerable
-                    Select Row!CODE).ToArray()
+            Return (From Row As DataRow In Me.Source.AsEnumerable Select Row!CODE).ToArray()
         End Get
     End Property
 
@@ -144,8 +131,6 @@ Public Class Languages
         Set(Value As String)
             ' Store the default language on database
             Me.SetDefaultLanguage(Value)
-            ' Save the changes only if one found
-            Bridge.Query.UpdateDatabase(Me.DataSource)
         End Set
     End Property
 
@@ -200,7 +185,7 @@ Public Class Languages
     End Function
 
     ' Get the server available culture list
-    Public Shared Function GetAllCulturesCode() As String()
+    Public Shared Function GetAllSystemCulturesCode() As String()
         ' Get all cultures installed on server
         Dim AllCulture As Globalization.CultureInfo() = Globalization.CultureInfo.GetCultures(CultureTypes.AllCultures)
 
@@ -216,9 +201,9 @@ Public Class Languages
 #Region " DATABASE INTERFACE "
 
     ' Get the data source of the database languages
-    Public Function GetView() As DataView
+    Public Function GetSortedView() As DataView
         ' Get the default view and order it
-        Dim View As DataView = New DataView(Me.DataSource)
+        Dim View As DataView = New DataView(Me.Source)
         View.Sort = "[ISDEFAULT] DESC, [TITLE]"
 
         ' Return the view
@@ -227,7 +212,7 @@ Public Class Languages
 
     ' Add new languages to the database table.
     ' NB: This function alter the structure of the < translations > database table
-    Protected Shadows Function Insert(Code As String, Title As String, Visible As Boolean, IsDefault As Boolean) As Long
+    Protected Shadows Function InsertAndUpdateDb(Code As String, Title As String, Visible As Boolean, IsDefault As Boolean) As Long
         ' Check for a valid code
         If String.IsNullOrEmpty(Code) Then
             Throw New Exception("The field < CODE > must be valid.")
@@ -248,26 +233,23 @@ Public Class Languages
                                   "ADD [" & Code & "] NTEXT"
             Query.Exec(Alter)
 
-            ' Lock the data source
-            SyncLock Me.DataSourceLocker
-                ' Insert the new row
-                Dim NewRow As DataRow = Me.DataSource.NewRow
-                NewRow!CODE = Code
-                NewRow!TITLE = Title
-                NewRow!VISIBLE = Visible
-                Me.DataSource.Rows.Add(NewRow)
-            End SyncLock
+            ' Insert the new row
+            Dim Pairs As Dictionary(Of String, Object) = New Dictionary(Of String, Object)
+            Pairs.Add("CODE", Code)
+            Pairs.Add("TITLE", Title)
+            Pairs.Add("VISIBLE", Visible)
+            MyBase.Insert(Pairs)
 
             ' Define the default language
             If IsDefault Then Me.SetDefaultLanguage(Code)
 
             ' Save the changes
-            Query.UpdateDatabase(Me.DataSource)
+            Query.UpdateDatabase(Me.Source)
             Query.CommitTransaction()
 
         Catch ex As Exception
             ' Rool back
-            Me.DataSource.RejectChanges()
+            Me.Source.RejectChanges()
             Query.RollBackTransaction()
 
             ' Propagate the exception
@@ -277,7 +259,7 @@ Public Class Languages
 
     ' Delete languages from the database table.
     ' NB: This function alter the structure of the < translations > database table
-    Public Shadows Sub Delete(Code As String)
+    Public Shadows Sub DeleteAndUpdateDb(Code As String)
         ' Create the query manager and start the transaction
         Dim Query As SCFramework.DbQuery = New SCFramework.DbQuery()
         Query.StartTransaction()
@@ -291,16 +273,16 @@ Public Class Languages
             ' Find the row and if exists delete it.
             ' I could use LINQ but in this case is more simple with the standard research because I must find one row using the primary key.
             ' The datatable, by default, was created in ignore case-sensitive for the string comparison so I don't take care of the "code" status.
-            Dim Row As DataRow = Me.DataSource.Rows.Find(Code)
+            Dim Row As DataRow = Me.Source.Rows.Find(Code)
             If Row IsNot Nothing Then Row.Delete()
 
             ' Save the changes
-            Query.UpdateDatabase(Me.DataSource)
+            Query.UpdateDatabase(Me.Source)
             Query.CommitTransaction()
 
         Catch ex As Exception
             ' Rool back
-            Me.DataSource.RejectChanges()
+            Me.Source.RejectChanges()
             Query.RollBackTransaction()
 
             ' Propagate the exception
@@ -313,14 +295,14 @@ Public Class Languages
         ' Find the row and if exists delete it
         ' I could use LINQ but in this case is more simple with the standard research because I must find one row using the primary key.
         ' The datatable, by default, was created in ignore case-sensitive for the string comparison so I don't take care of the "code" status.
-        Dim Row As DataRow = Me.DataSource.Rows.Find(Code)
+        Dim Row As DataRow = Me.Source.Rows.Find(Code)
         If Row IsNot Nothing Then
             Row!TITLE = Title
             Row!VISIBLE = Visible
         End If
 
         ' Save the changes
-        Bridge.Query.UpdateDatabase(Me.DataSource)
+        Bridge.Query.UpdateDatabase(Me.Source)
     End Sub
 
 

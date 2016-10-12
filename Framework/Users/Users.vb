@@ -6,7 +6,7 @@
 ' Users manager (new from the version 5.x)
 ' Versione 5.0.0
 ' Created --/--/----
-' Created 03/10/2016
+' Created 11/10/2016
 '
 '*************************************************************************************************
 
@@ -55,7 +55,7 @@ Public Class Users
     End Function
 
     ' Return an array of users
-    Public Function GetAllUsers(Source As DataTable) As List(Of User)
+    Private Function GetAllUsers(Source As DataTable) As User()
         ' Create the container
         Dim List As List(Of User) = New List(Of User)
 
@@ -66,7 +66,7 @@ Public Class Users
         Next
 
         ' Return
-        Return List
+        Return List.ToArray()
     End Function
 
 #End Region
@@ -76,67 +76,82 @@ Public Class Users
     ' Get a user details filtered by email
     Public Function GetUser(ID As Long) As User
         ' Create the clausole
-        Dim Clauses As DbSqlBuilder.Clauses = New DbSqlBuilder.Clauses()
+        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
         Clauses.Add("ID_USER", ID)
 
         ' If have one or more rows return the first else null
-        Return Me.GetFirstUser(Me.GetSource(Clauses))
+        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
+        Return Me.GetFirstUser(Source)
     End Function
 
     ' Get a user details filtered by email
     Public Function GetUser(EMail As String) As User
         ' Create the clausole
-        Dim Clauses As DbSqlBuilder.Clauses = New DbSqlBuilder.Clauses()
+        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
         Clauses.Add("EMAIL", EMail)
 
         ' If have one or more rows return the first else null
-        Return Me.GetFirstUser(Me.GetSource(Clauses))
+        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
+        Return Me.GetFirstUser(Source)
     End Function
 
     ' Get a user details filtered by login and password
     Public Function GetUser(Login As String, Password As String) As User
         ' Create the clausole
-        Dim Clauses As DbSqlBuilder.Clauses = New DbSqlBuilder.Clauses()
+        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
         Clauses.Add("LOGIN", Login)
         Clauses.Add("PASSWORD", Password)
 
         ' If have one or more rows return the first else null
-        Return Me.GetFirstUser(Me.GetSource(Clauses))
+        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
+        Return Me.GetFirstUser(Source)
+    End Function
+
+    ' Get all users list but exclude the root
+    Public Function GetUsers() As User()
+        ' Create the clause for levels by cycle all
+        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
+        Clauses.Add("LOGIN", SCFramework.DbClauses.ComparerType.Different, SCFramework.User.ROOT_PREFIX, False)
+
+        ' Return the users list
+        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
+        Return Me.GetAllUsers(Source)
     End Function
 
     ' Get the users list filtered by level
-    Public Function GetUsers(ByVal ParamArray Levels() As Short) As List(Of User)
-        ' Create the clause for levels
-        Dim Clauses As DbSqlBuilder.Clauses = New DbSqlBuilder.Clauses()
-
-        ' Cycle all levels
+    Public Function GetUsers(ByVal ParamArray Levels() As Short) As User()
+        ' Create the clause for levels by cycle all
+        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
         For Each Level As Short In Levels
             ' Add the condition
-            Clauses.Add("LEVEL", DbSqlBuilder.Clauses.ComparerType.Equal, Level, False)
+            Clauses.Add("LEVEL", SCFramework.DbClauses.ComparerType.Equal, Level, False)
         Next
 
         ' Return the users list
-        Return Me.GetAllUsers(Me.GetSource(Clauses))
+        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
+        Return Me.GetAllUsers(Source)
     End Function
 
     ' Check if a login already exists
-    Public Function CheckLogin(Login As String) As Boolean
+    Public Function LoginExists(Login As String) As Boolean
         ' Create the clausole
-        Dim Clauses As DbSqlBuilder.Clauses = New DbSqlBuilder.Clauses()
+        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
         Clauses.Add("LOGIN", Login)
 
         ' If have one or more rows return the first else null
-        Return Not IsNothing(Me.GetFirstUser(Me.GetSource(Clauses)))
+        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
+        Return Source.Rows.Count > 0
     End Function
 
     ' Check if a email already exists
-    Public Function CheckEMail(EMail As String) As Boolean
+    Public Function EMailExists(EMail As String) As Boolean
         ' Create the clausole
-        Dim Clauses As DbSqlBuilder.Clauses = New DbSqlBuilder.Clauses()
+        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
         Clauses.Add("EMAIL", EMail)
 
         ' If have one or more rows return the first else null
-        Return Not IsNothing(Me.GetFirstUser(Me.GetSource(Clauses)))
+        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
+        Return Source.Rows.Count > 0
     End Function
 
 #End Region
@@ -151,12 +166,11 @@ Public Class Users
         ' The root cannot be deleted from the code only manual from the DB.
         If User.IsRoot Then
             ' Throw an exception
-            Throw New Exception("The ROOT user cannot be deleted!")
+            Throw New Exception("The ROOT user cannot be deleted.")
 
         Else
             ' Create the clause and call the base method
-            Dim Clauses As DbSqlBuilder.Clauses = MyBase.ToClauses(UserID)
-            Return MyBase.Delete(Clauses)
+            Return MyBase.Delete(MyBase.ToClauses(UserID))
         End If
     End Function
 
@@ -168,7 +182,7 @@ Public Class Users
         ' The root cannot be deleted from the code only manual from the DB.
         If User.IsRoot Then
             ' Throw an exception
-            Throw New Exception("The ROOT user cannot be modified or created!")
+            Throw New Exception("The ROOT user cannot be modified or created.")
 
         Else
             ' Check the case 

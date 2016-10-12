@@ -6,7 +6,7 @@
 ' User details
 ' Versione 5.0.0
 ' Created --/--/----
-' Updated 03/10/2016
+' Updated 11/10/2016
 '
 '*************************************************************************************************
 
@@ -15,7 +15,7 @@ Public Class User
 
     ' Constants
     Private Const CRYPT_KEY = "{caneuva#123456789}"
-    Private Const ROOT_PREFIX = "ROOT"
+    Public Const ROOT_PREFIX = "ROOT"
 
 
     ' Define all properties of user

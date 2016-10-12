@@ -85,7 +85,6 @@
     <Compile Include="Controls\Image\Image.vb" />
     <Compile Include="Framework\Database\DbClauses.vb" />
     <Compile Include="Framework\Database\DbHelper.vb" />
-    <Compile Include="Framework\Database\DbHelperExtended.vb" />
     <Compile Include="Framework\Base\MasterPage.vb">
       <SubType>ASPXCodeBehind</SubType>
     </Compile>

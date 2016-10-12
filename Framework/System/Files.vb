@@ -155,7 +155,7 @@ Public Class Files
         Dim ToDelete As DataTable = Me.Filter(Clauses)
         Me.DeletePhisically(ToDelete)
 
-        ' Call the base method
+        ' Call the base method and update the database
         Return MyBase.Delete(Clauses)
     End Function
 

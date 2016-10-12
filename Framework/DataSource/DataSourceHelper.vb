@@ -15,13 +15,11 @@
 Public MustInherit Class DataSourceHelper
     Inherits DbHelper
 
-    ' Hold the data table source
+    ' Holders
     Private mDataSource As DataTable = Nothing
-    ' The data source locker
     Private mDataSourceLocker As Object = New Object()
-
-    ' Subordinates
     Private mSubordinates As List(Of DataSourceHelper) = Nothing
+    Private mWaitBeforeUpdate As Boolean = False
 
 
 #Region " CONSTRUCTOR "
@@ -99,6 +97,14 @@ Public MustInherit Class DataSourceHelper
         End Get
     End Property
 
+    ' Get the data table filtered
+    Public ReadOnly Property Source() As DataTable
+        Get
+            If Me.mDataSource Is Nothing Then Me.SetSource()
+            Return Me.mDataSource
+        End Get
+    End Property
+
 #End Region
 
 #Region " PROTECTED "
@@ -121,13 +127,6 @@ Public MustInherit Class DataSourceHelper
         End If
 
         ' Return the filtered table
-        Return Me.mDataSource
-    End Function
-
-    ' Get the data table filtered by where clausole
-    Protected Overridable Function GetSource() As DataTable
-        ' If the source is nothing load all
-        If Me.mDataSource Is Nothing Then Me.SetSource()
         Return Me.mDataSource
     End Function
 
@@ -168,7 +167,7 @@ Public MustInherit Class DataSourceHelper
 
         Catch ex As Exception
             ' If an error roll back and propagate the exception
-            Me.mDataSource.RejectChanges()
+            Me.RejectChanges()
             Throw ex
         End Try
     End Function
@@ -255,7 +254,6 @@ Public MustInherit Class DataSourceHelper
 
         Catch ex As Exception
             ' Rollback
-            Me.mDataSource.RejectChanges()
             If Starter Then Query.RollBackTransaction()
         End Try
     End Function
@@ -276,6 +274,17 @@ Public MustInherit Class DataSourceHelper
         ' Return the new datasource
         Return View.ToTable()
     End Function
+
+    ' Reject the soure changes and also on all the subordinates
+    Public Sub RejectChanges()
+        ' Reject the source changes
+        Me.Source.RejectChanges()
+
+        ' Cycle all the subordinates for rejectr the changes
+        For Each Subordinate As DataSourceHelper In Me.mSubordinates
+            Subordinate.RejectChanges()
+        Next
+    End Sub
 
 #End Region
 
