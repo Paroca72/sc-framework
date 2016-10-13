@@ -18,8 +18,9 @@ Public MustInherit Class DataSourceHelper
     ' Holders
     Private mDataSource As DataTable = Nothing
     Private mDataSourceLocker As Object = New Object()
+
     Private mSubordinates As List(Of DataSourceHelper) = Nothing
-    Private mWaitBeforeUpdate As Boolean = False
+    Private mLastClauses As SCFramework.DbClauses = Nothing
 
 
 #Region " CONSTRUCTOR "
@@ -100,7 +101,7 @@ Public MustInherit Class DataSourceHelper
     ' Get the data table filtered
     Public ReadOnly Property Source() As DataTable
         Get
-            If Me.mDataSource Is Nothing Then Me.SetSource()
+            If Me.mDataSource Is Nothing Then Me.SetSource(Me.mLastClauses)
             Return Me.mDataSource
         End Get
     End Property
@@ -111,8 +112,11 @@ Public MustInherit Class DataSourceHelper
 
     ' Set the data table as a source filtered by where clausole
     Protected Overridable Function SetSource(Optional Clauses As DbClauses = Nothing) As DataTable
+        ' Hold the clauses
+        Me.mLastClauses = Clauses
+
         ' Source
-        Me.mDataSource = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
+        Me.mDataSource = Bridge.Query.Table(Me.GetTableName(), Nothing, Me.mLastClauses)
         Me.mDataSource.CaseSensitive = False
         Me.mDataSource.Locale = CultureInfo.InvariantCulture
 
@@ -131,7 +135,7 @@ Public MustInherit Class DataSourceHelper
     End Function
 
     ' Delete command
-    Protected Overridable Shadows Function Delete(Clauses As DbClauses) As Long
+    Protected Overridable Shadows Function Delete(Clauses As DbClauses) As DataRow()
         ' Check for safety
         If (Me.Safety) And (Clauses Is Nothing OrElse Clauses.IsEmpty) Then
             Throw New Exception("This command will delete all row in the table and related subordinate table items!")
@@ -154,16 +158,21 @@ Public MustInherit Class DataSourceHelper
                 Next
             Next
 
+            ' Define the deleted rows holder
+            Dim DeletedRows As List(Of DataRow) = New List(Of DataRow)
+
             ' Lock the data source
             SyncLock Me.DataSourceLocker
                 ' Delete all row in the view
                 For Each Row As DataRowView In View
+                    ' Delete and store the current row
                     Row.Delete()
+                    DeletedRows.Add(Row.Row)
                 Next
             End SyncLock
 
-            ' Return the number or deleted items
-            Return View.Count
+            ' Return the deleted rows
+            Return DeletedRows.ToArray()
 
         Catch ex As Exception
             ' If an error roll back and propagate the exception
@@ -173,7 +182,7 @@ Public MustInherit Class DataSourceHelper
     End Function
 
     ' Insert command
-    Protected Overridable Shadows Function Insert(Values As IDictionary(Of String, Object)) As Long
+    Protected Overridable Shadows Sub Insert(Values As IDictionary(Of String, Object))
         ' If the source is nothing load all
         If Me.mDataSource Is Nothing Then Me.SetSource()
 
@@ -190,10 +199,10 @@ Public MustInherit Class DataSourceHelper
 
         ' Insert
         Me.mDataSource.Rows.Add(NewRow)
-    End Function
+    End Sub
 
     ' Update command
-    Protected Overridable Shadows Function Update(Values As IDictionary(Of String, Object), Clauses As SCFramework.DbClauses) As Long
+    Protected Overridable Shadows Function Update(Values As IDictionary(Of String, Object), Clauses As SCFramework.DbClauses) As DataRow()
         ' Check for safety
         If (Me.Safety) And (Clauses Is Nothing OrElse Clauses.IsEmpty) Then
             Throw New Exception("This command will update all row in the table!")
@@ -206,6 +215,9 @@ Public MustInherit Class DataSourceHelper
         Dim View As DataView = New DataView(Me.mDataSource)
         View.RowFilter = Clauses.ForFilter
 
+        ' Define the updated rows holder
+        Dim UpdatedRows As List(Of DataRow) = New List(Of DataRow)
+
         ' Lock the data source
         SyncLock Me.DataSourceLocker
             ' Cycle all rows in the view
@@ -217,11 +229,13 @@ Public MustInherit Class DataSourceHelper
                         Row(Field) = Values(Field)
                     End If
                 Next
+                ' Store the updated row
+                UpdatedRows.Add(Row.Row)
             Next
         End SyncLock
 
-        ' Return the updated items count
-        Return View.Count
+        ' Return the updated rows
+        Return UpdatedRows.ToArray()
     End Function
 
     ' Fix the changes on the database
@@ -285,6 +299,34 @@ Public MustInherit Class DataSourceHelper
             Subordinate.RejectChanges()
         Next
     End Sub
+
+    ' Force to reload data source using the last cluases at the next source access
+    Public Sub ReloadDataSource()
+        Me.mDataSource = Nothing
+    End Sub
+
+#End Region
+
+#Region " DATABASE ACCESS "
+
+    ' Delete
+    Public Function DbDelete(Clauses As SCFramework.DbClauses) As Long
+        ' Call the base method and reset the source
+        Me.mDataSource = Nothing
+        Return MyBase.Delete(Clauses)
+    End Function
+
+    Public Function DbInsert(Values As IDictionary(Of String, Object)) As Long
+        ' Call the base method and reset the source
+        Me.mDataSource = Nothing
+        Return MyBase.Insert(Values)
+    End Function
+
+    Protected Overridable Function DbUpdate(Values As IDictionary(Of String, Object), Clauses As SCFramework.DbClauses) As Long
+        ' Call the base method and reset the source
+        Me.mDataSource = Nothing
+        Return MyBase.Update(Values, Clauses)
+    End Function
 
 #End Region
 
