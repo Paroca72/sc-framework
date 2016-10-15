@@ -90,18 +90,19 @@ Public Class Files
         Next
     End Sub
 
-    ' Internal procedure for delete 
-    Private Sub DeleteAndUpdate(Clauses As SCFramework.DbClauses)
-        ' Delete from the datasource
-        Dim DeletedRows() As DataRow = MyBase.Delete(Clauses)
+    ' Chekc the fields
+    Private Sub CheckPath(Path As String)
+        ' Check for virtual path
+        If Not Path.StartsWith("~/") Then
+            Throw New Exception("The file path must be in virtual format.")
+        End If
 
-        ' If have deleted something update the datasource and delete the file fisically
-        If DeletedRows.Count > 0 Then
-            Me.DeletePhisically(DeletedRows)
-            Me.UpdateDataBase()
+        ' Check if file exists
+        Dim PhisicalPath As String = System.Web.Hosting.HostingEnvironment.MapPath(Path)
+        If Not IO.File.Exists(Path) Then
+            Throw New Exception("File not exists.")
         End If
     End Sub
-
 
 #End Region
 
@@ -123,8 +124,13 @@ Public Class Files
                     Date.Now.AddHours(-SCFramework.Files.DELETE_TEMPORARY_FILES_AFTER),
                     True)
 
-        ' Delete from everywhere
-        Me.DeleteAndUpdate(Clauses)
+        ' Delete from the datasource
+        Dim DeletedRows() As DataRow = MyBase.Delete(Clauses)
+
+        ' If have deleted something update the datasource and delete the file fisically
+        If DeletedRows.Count > 0 Then
+            Me.DeletePhisically(DeletedRows)
+        End If
     End Sub
 
     ' Create the thread procedure
@@ -153,53 +159,38 @@ Public Class Files
 
 #Region " PUBLIC "
 
-    ' Delete by a generic one numeric primary key
-    Public Shadows Function Delete(Value As Long) As Long
-        ' Delete from everywhere
-        Me.DeleteAndUpdate(MyBase.ToClauses(Value))
-    End Function
-
     ' Insert a file into database and return the new ID.
     ' This procedure access directly to the database so for massive inserts is not performing.
-    Public Shadows Function Insert(Path As String, Name As String, IsTemporary As Boolean) As Long
-        ' Check for virtual path
-        If Not Path.StartsWith("~/") Then
-            Throw New Exception("The file path must be in virtual format.")
-        End If
-
-        ' Check if file exists
-        Dim PhisicalPath As String = System.Web.Hosting.HostingEnvironment.MapPath(Path)
-        If Not IO.File.Exists(Path) Then
-            Throw New Exception("File not exists.")
-        End If
+    Public Shadows Function DbInsert(Path As String, Name As String, IsTemporary As Boolean) As Long
+        ' Check the path
+        Me.CheckPath(Path)
 
         ' Create the values list to insert.
-        ' NOTE: The primary key must stay for last as the value Is returned by the databse inserting as identity.
-        ' In this way we don't need to reload the datasource as the data source will be update using the base method. 
         Dim Values As Dictionary(Of String, Object) = New Dictionary(Of String, Object)()
         Values.Add("PATH", Path)
         Values.Add("NAME", IIf(SCFramework.Utils.String.IsEmptyOrWhite(Name), Name, IO.Path.GetFileName(Path)))
         Values.Add("INSERT_DATE", IIf(IsTemporary, Date.Now, Date.MinValue))
-        Values.Add("ID_FILE", Me.DbInsert(Values))
 
         ' Insert the new record using the base method
-        MyBase.Insert(Values)
-
-        ' Return the new file ID
-        Return Values("ID_FILE")
+        Return MyBase.DbInsert(Values)
     End Function
 
-    Public Shadows Function Insert(Path As String, IsTemporary As Boolean) As Long
-        Return Me.Insert(Path, String.Empty, IsTemporary)
+    Public Shadows Function DbInsert(Path As String, IsTemporary As Boolean) As Long
+        Return Me.DbInsert(Path, String.Empty, IsTemporary)
     End Function
 
     ' Massive insert
     Public Shadows Sub Insert(Files() As KeyValuePair(Of String, String), IsTemporary As Boolean)
+        ' Check all files path
+        For Each File As KeyValuePair(Of String, String) In Files
+            Me.CheckPath(File.Key)
+        Next
+
         ' Cycle all the files for insert it inside the data source
-        For Each Pair As KeyValuePair(Of String, String) In Files
+        For Each File As KeyValuePair(Of String, String) In Files
             ' Get the infos
-            Dim Path As String = Pair.Key
-            Dim Name As String = Pair.Value
+            Dim Path As String = File.Key
+            Dim Name As String = File.Value
 
             ' Create the values list to insert
             Dim Values As Dictionary(Of String, Object) = New Dictionary(Of String, Object)()
@@ -210,24 +201,44 @@ Public Class Files
             ' Insert calling the base method
             MyBase.Insert(Values)
         Next
-
-        ' Update the database
-        Me.UpdateDataBase()
     End Sub
+
+    ' Single insert
+    Public Shadows Sub Insert(Path As String, Name As String, IsTemporary As Boolean)
+        ' Create the pairs and call the insert
+        Dim Pairs() As KeyValuePair(Of String, String) = {New KeyValuePair(Of String, String)(Path, Name)}
+        Me.Insert(Pairs, IsTemporary)
+    End Sub
+
+    ' Delete by a generic one numeric primary key
+    Public Shadows Function Delete(File As Long) As DataRow
+        ' Delete from datasource and return the deleted row if exists
+        Dim Rows() As DataRow = MyBase.Delete(Me.ToClauses(File))
+        Return Rows.FirstOrDefault()
+    End Function
 
     ' Change the file status.
     ' Return true if had at least one updated succeed.
-    Public Shadows Function Update(File As Long, IsTemporary As Boolean) As Boolean
+    Public Shadows Function Update(File As Long, IsTemporary As Boolean) As DataRow
         ' Create the values list to insert
         Dim Values As Dictionary(Of String, Object) = New Dictionary(Of String, Object)()
         Values.Add("INSERT_DATE", IIf(IsTemporary, Date.Now, Date.MinValue))
 
-        ' Insert the new record using the base method
-        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses("ID_FILE", File)
-        Update = MyBase.Update(Values, Clauses).Count > 0
+        ' Insert the new record using the base method and return the updated if exists
+        Dim Rows() As DataRow = MyBase.Update(Values, Me.ToClauses(File))
+        Return Rows.FirstOrDefault()
+    End Function
 
-        ' Update the database
-        Me.UpdateDataBase()
+    ' Accept the datasource changes
+    Public Overrides Function AcceptChanges(Optional Query As SCFramework.DbQuery = Nothing) As Boolean
+        ' Cycle all the datasource for delete files phisivally
+        Dim Deleted As DataTable = Me.Source.GetChanges(DataRowState.Deleted)
+        For Each Row As DataRow In Deleted.Rows
+            Me.DeletePhisically(Row)
+        Next
+
+        ' Call the base method
+        Return MyBase.AcceptChanges(Query)
     End Function
 
 #End Region

@@ -1,25 +1,20 @@
 '*************************************************************************************************
 ' 
 ' [SCFramework]
-' Bridge
-' di Samuele Carassai
+' Bridge  
+' by Samuele Carassai
 '
-' Interfaccia comune
-' Versione 1.4.1
-'
-'*************************************************************************************************
-'
-' // DIPENDENZE //
-'
-'   Classi: 
-'       SCFramework.SystemConfig
-'
+' Define bridge to the application
+' Version 5.0.0
+' Created 14/10/2016
+' Updated --/--/----
 '
 '*************************************************************************************************
 
 
 Public Class Bridge
 
+    ' Get the Context object if exists
     Public Shared ReadOnly Property Context() As HttpContext
         Get
             Try
@@ -30,6 +25,7 @@ Public Class Bridge
         End Get
     End Property
 
+    ' Get the Request object if exists
     Public Shared ReadOnly Property Request() As HttpRequest
         Get
             If Context Is Nothing Then
@@ -40,6 +36,7 @@ Public Class Bridge
         End Get
     End Property
 
+    ' Get the Response object if exists
     Public Shared ReadOnly Property Response() As HttpResponse
         Get
             If Context Is Nothing Then
@@ -50,6 +47,7 @@ Public Class Bridge
         End Get
     End Property
 
+    ' Get the Application object if exists
     Public Shared ReadOnly Property Application() As HttpApplicationState
         Get
             If Context Is Nothing Then
@@ -60,6 +58,7 @@ Public Class Bridge
         End Get
     End Property
 
+    ' Get the Server object if exists
     Public Shared ReadOnly Property Server() As HttpServerUtility
         Get
             If Context Is Nothing Then
@@ -70,26 +69,29 @@ Public Class Bridge
         End Get
     End Property
 
-    Public Shared ReadOnly Property [Page]() As Page
+    ' Get the standard Page object if exists
+    Public Shared ReadOnly Property [Page]() As System.Web.UI.Page
         Get
             If Context Is Nothing Then
                 Return Nothing
             Else
-                Return CType(Context.Handler, Page)
+                Return CType(Context.Handler, System.Web.UI.Page)
             End If
         End Get
     End Property
 
-    Public Shared ReadOnly Property [BasePage]() As Page
+    ' Get the SCFramework base Page object if exists
+    Public Shared ReadOnly Property [BasePage]() As SCFramework.Page
         Get
-            If (Bridge.Page IsNot Nothing) AndAlso (TypeOf Bridge.Page Is Page) Then
-                Return CType(Bridge.Page, Page)
+            If (Bridge.Page IsNot Nothing) AndAlso (TypeOf Bridge.Page Is SCFramework.Page) Then
+                Return CType(Bridge.Page, SCFramework.Page)
             Else
                 Return Nothing
             End If
         End Get
     End Property
 
+    ' Get the Session object if exists
     Public Shared ReadOnly Property [Session]() As SessionState.HttpSessionState
         Get
             If Context Is Nothing Then
@@ -100,9 +102,8 @@ Public Class Bridge
         End Get
     End Property
 
-    ' ------------------------------------
-    ' CREATE IF NOT EXIST
-
+    ' Get the Query object if exists. 
+    ' If Not create a New one.
     Public Shared Function Query() As SCFramework.DbQuery
         If Bridge.BasePage IsNot Nothing Then
             Dim [Page] As Page = CType(Bridge.Page, Page)
@@ -110,19 +111,6 @@ Public Class Bridge
         Else
             Dim DB As SCFramework.DbQuery = New SCFramework.DbQuery
             Return DB
-        End If
-    End Function
-
-    Public Shared Function CurrentUser() As User
-        If Bridge.Session Is Nothing OrElse Bridge.Session("CurrentUser") Is Nothing Then
-            If Bridge.Session Is Nothing Then
-                Return New User()
-            Else
-                Bridge.Session("CurrentUser") = New User()
-                Return Bridge.Session("CurrentUser")
-            End If
-        Else
-            Return CType(Bridge.Session("CurrentUser"), User)
         End If
     End Function
 

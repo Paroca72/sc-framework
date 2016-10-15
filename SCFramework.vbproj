@@ -95,6 +95,7 @@
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="Framework\Database\DbSqlBuilder.vb" />
+    <Compile Include="Framework\Global\LogTracer.vb" />
     <Compile Include="Framework\Global\Stats.vb" />
     <Compile Include="Framework\System\Bridge.vb" />
     <Compile Include="Framework\System\Cache.vb" />

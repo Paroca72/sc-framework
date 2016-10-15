@@ -7,7 +7,7 @@
 ' Sql builder manager
 ' Version 5.0.0
 ' Created 17/09/2015
-' Updated 10/10/2016
+' Updated 15/10/2016
 '
 ' Integrazione: OleDb, Sql
 '
@@ -54,9 +54,9 @@ Public Class DbSqlBuilder
 
         ' Return the value by the case
         Select Case LCase(Value.GetType.Name)
-            Case "date", "datetime" : Return [Date](Value, , Provider)
+            Case "date", "datetime" : Return [Date](Value, True, Provider)
             Case "boolean" : Return [Boolean](Value, Provider)
-            Case "string" : Return [String](Value, , Provider)
+            Case "string" : Return [String](Value, False, Provider)
             Case "byte[]" : Return Binary(Value)
             Case Else : Return Numeric(Value)
         End Select
@@ -69,7 +69,7 @@ Public Class DbSqlBuilder
                                     Optional ByVal Provider As DbQuery.ProvidersList = DbQuery.ProvidersList.Undefined) As String
         ' Check for return NULL
         If Value Is Nothing OrElse IsDBNull(Value) Then Return "NULL"
-        If EmptyIsNULL AndAlso ("" & Value).Trim() = String.Empty Then Return "NULL"
+        If EmptyIsNULL AndAlso SCFramework.Utils.String.IsEmptyOrWhite(Value) Then Return "NULL"
 
         ' Fix the provider
         If Provider = DbQuery.ProvidersList.Undefined Then

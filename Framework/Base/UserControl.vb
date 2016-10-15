@@ -1,19 +1,16 @@
 '*************************************************************************************************
 ' 
 ' [SCFramework]
-' BaseUserControl
-' di Samuele Carassai
+' UserControl  
+' by Samuele Carassai
 '
-' Definisce l'accesso alle funzioni standard
-' Versione 1.0.0
-'
-'------------------------------------------------------------------------------------------------
-' // DIPENDENZE //
-'
-'   Classi: 
-'       SCFramework.BasePage
+' Define a wrapper for the user control
+' Version 5.0.0
+' Created 14/10/2016
+' Updated --/--/----
 '
 '*************************************************************************************************
+
 
 Public Class UserControl
     Inherits System.Web.UI.UserControl

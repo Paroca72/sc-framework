@@ -7,7 +7,7 @@
 ' Data source helper
 ' Version 5.0.0
 ' Created 10/10/2016
-' Updated 11/10/2016
+' Updated 14/10/2016
 '
 '*************************************************************************************************
 
@@ -238,8 +238,44 @@ Public MustInherit Class DataSourceHelper
         Return UpdatedRows.ToArray()
     End Function
 
+    ' Delete
+    Protected Overridable Function DbDelete(Clauses As SCFramework.DbClauses) As Long
+        ' Call the base method and reset the source
+        Me.mDataSource = Nothing
+        Return MyBase.Delete(Clauses)
+    End Function
+
+    Protected Overridable Function DbInsert(Values As IDictionary(Of String, Object)) As Long
+        ' Call the base method and reset the source
+        Me.mDataSource = Nothing
+        Return MyBase.Insert(Values)
+    End Function
+
+    Protected Overridable Function DbUpdate(Values As IDictionary(Of String, Object), Clauses As SCFramework.DbClauses) As Long
+        ' Call the base method and reset the source
+        Me.mDataSource = Nothing
+        Return MyBase.Update(Values, Clauses)
+    End Function
+
+#End Region
+
+#Region " PUBLIC "
+
+    ' Get the data table filtered by where clausole
+    Public Function Filter(Optional Clauses As DbClauses = Nothing) As DataTable
+        ' If the source is nothing load all
+        If Me.mDataSource Is Nothing Then Me.SetSource()
+
+        ' Filter the source
+        Dim View As DataView = New DataView(Me.mDataSource)
+        View.RowFilter = Clauses.ForFilter
+
+        ' Return the new datasource
+        Return View.ToTable()
+    End Function
+
     ' Fix the changes on the database
-    Protected Overridable Function UpdateDataBase(Optional Query As SCFramework.DbQuery = Nothing) As Boolean
+    Public Overridable Function AcceptChanges(Optional Query As SCFramework.DbQuery = Nothing) As Boolean
         ' If the query is nothing create a new one
         Dim Starter As Boolean = Query Is Nothing
         If Starter Then
@@ -260,7 +296,7 @@ Public MustInherit Class DataSourceHelper
 
             ' Cycle subortdinates for update
             For Each Subordinate As DataSourceHelper In Me.mSubordinates
-                Subordinate.UpdateDataBase(Query)
+                Subordinate.AcceptChanges(Query)
             Next
 
             ' Commit the transaction
@@ -272,25 +308,8 @@ Public MustInherit Class DataSourceHelper
         End Try
     End Function
 
-#End Region
-
-#Region " PUBLIC "
-
-    ' Get the data table filtered by where clausole
-    Public Function Filter(Optional Clauses As DbClauses = Nothing) As DataTable
-        ' If the source is nothing load all
-        If Me.mDataSource Is Nothing Then Me.SetSource()
-
-        ' Filter the source
-        Dim View As DataView = New DataView(Me.mDataSource)
-        View.RowFilter = Clauses.ForFilter
-
-        ' Return the new datasource
-        Return View.ToTable()
-    End Function
-
     ' Reject the soure changes and also on all the subordinates
-    Public Sub RejectChanges()
+    Public Overridable Sub RejectChanges()
         ' Reject the source changes
         Me.Source.RejectChanges()
 
@@ -304,29 +323,6 @@ Public MustInherit Class DataSourceHelper
     Public Sub ReloadDataSource()
         Me.mDataSource = Nothing
     End Sub
-
-#End Region
-
-#Region " DATABASE ACCESS "
-
-    ' Delete
-    Public Function DbDelete(Clauses As SCFramework.DbClauses) As Long
-        ' Call the base method and reset the source
-        Me.mDataSource = Nothing
-        Return MyBase.Delete(Clauses)
-    End Function
-
-    Public Function DbInsert(Values As IDictionary(Of String, Object)) As Long
-        ' Call the base method and reset the source
-        Me.mDataSource = Nothing
-        Return MyBase.Insert(Values)
-    End Function
-
-    Protected Overridable Function DbUpdate(Values As IDictionary(Of String, Object), Clauses As SCFramework.DbClauses) As Long
-        ' Call the base method and reset the source
-        Me.mDataSource = Nothing
-        Return MyBase.Update(Values, Clauses)
-    End Function
 
 #End Region
 
