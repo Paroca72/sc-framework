@@ -7,13 +7,13 @@
 ' Data source helper
 ' Version 5.0.0
 ' Created 10/10/2016
-' Updated 14/10/2016
+' Updated 16/10/2016
 '
 '*************************************************************************************************
 
 
 Public MustInherit Class DataSourceHelper
-    Inherits DbHelper
+    Inherits DbHelperExtended
 
     ' Holders
     Private mDataSource As DataTable = Nothing
@@ -87,63 +87,33 @@ Public MustInherit Class DataSourceHelper
         Return Pairs
     End Function
 
-#End Region
-
-#Region " PROPERTIES "
-
-    ' Get the data source locker object
-    Public ReadOnly Property DataSourceLocker As Object
-        Get
-            Return Me.mDataSourceLocker
-        End Get
-    End Property
-
-    ' Get the data table filtered
-    Public ReadOnly Property Source() As DataTable
-        Get
-            If Me.mDataSource Is Nothing Then Me.SetSource(Me.mLastClauses)
-            Return Me.mDataSource
-        End Get
-    End Property
-
-#End Region
-
-#Region " PROTECTED "
-
-    ' Set the data table as a source filtered by where clausole
-    Protected Overridable Function SetSource(Optional Clauses As DbClauses = Nothing) As DataTable
-        ' Hold the clauses
-        Me.mLastClauses = Clauses
-
-        ' Source
-        Me.mDataSource = Bridge.Query.Table(Me.GetTableName(), Nothing, Me.mLastClauses)
-        Me.mDataSource.CaseSensitive = False
-        Me.mDataSource.Locale = CultureInfo.InvariantCulture
-
-        ' Primary key
-        If Me.PrimaryKeys.Count > 0 Then
-            SCFramework.Utils.DataTable.SetPrimaryKeys(Me.mDataSource, Me.PrimaryKeys.ToArray)
+    ' Check if the clauses is same of the last in memory
+    Private Function ClausesIsChanged(NewClauses As SCFramework.DbClauses) As Boolean
+        ' Check for null values
+        If NewClauses Is Nothing And Me.mLastClauses Is Nothing Then
+            Return False
+        ElseIf NewClauses IsNot Nothing Then
+            ' Compare
+            Return NewClauses.IsEqual(Me.mLastClauses)
+        Else
+            ' It means one is nothing and one no.
+            Return True
         End If
-
-        ' Auto number
-        If Me.AutoNumbers.Count > 0 Then
-            SCFramework.Utils.DataTable.SetAutoIncrements(Me.mDataSource, Me.AutoNumbers.ToArray)
-        End If
-
-        ' Return the filtered table
-        Return Me.mDataSource
     End Function
 
-    ' Delete command
-    Protected Overridable Shadows Function Delete(Clauses As DbClauses) As DataRow()
-        ' Check for safety
-        If (Me.Safety) And (Clauses Is Nothing OrElse Clauses.IsEmpty) Then
-            Throw New Exception("This command will delete all row in the table and related subordinate table items!")
-        End If
+    ' Return the if memory managed
+    Private ReadOnly Property IsMemoryManaged() As Boolean
+        Get
+            Return Me.mDataSource Is Nothing
+        End Get
+    End Property
 
-        ' If the source is nothing load all
-        If Me.mDataSource Is Nothing Then Me.SetSource()
+#End Region
 
+#Region " DATA MANAGEMENT "
+
+    ' Delete in memory
+    Private Function DeleteInMemory(Clauses As DbClauses) As Long
         Try
             ' Get the filtered view
             Dim View As DataView = New DataView(Me.mDataSource)
@@ -158,21 +128,17 @@ Public MustInherit Class DataSourceHelper
                 Next
             Next
 
-            ' Define the deleted rows holder
-            Dim DeletedRows As List(Of DataRow) = New List(Of DataRow)
-
             ' Lock the data source
             SyncLock Me.DataSourceLocker
                 ' Delete all row in the view
                 For Each Row As DataRowView In View
                     ' Delete and store the current row
                     Row.Delete()
-                    DeletedRows.Add(Row.Row)
                 Next
             End SyncLock
 
-            ' Return the deleted rows
-            Return DeletedRows.ToArray()
+            ' Return the deleted rows count
+            Return View.Count
 
         Catch ex As Exception
             ' If an error roll back and propagate the exception
@@ -181,11 +147,46 @@ Public MustInherit Class DataSourceHelper
         End Try
     End Function
 
-    ' Insert command
-    Protected Overridable Shadows Sub Insert(Values As IDictionary(Of String, Object))
-        ' If the source is nothing load all
-        If Me.mDataSource Is Nothing Then Me.SetSource()
+    ' Delete on database
+    Private Function DeleteOnDataBase(Clauses As DbClauses) As Long
+        ' Get the current query object
+        Dim Query As SCFramework.DbQuery = Me.Query
+        ' Determine if must manage the transaction
+        Dim TransactionOwner As Boolean = Not Query.InTransaction
 
+        Try
+            ' Check if not within a transaction
+            If TransactionOwner Then Query.StartTransaction()
+
+            ' Get the source by the clauses
+            Dim Source As DataTable = Me.GetSource(Clauses)
+
+            ' Cycle subortdinates for delete the references
+            For Each Subordinate As DataSourceHelper In Me.mSubordinates
+                ' Cycle rows and for each row to delete extract the pairs key
+                For Each Row As DataRow In Source.Rows
+                    ' Exctract the current primary keys and delete the items inside the subordinate
+                    Dim Cluases As SCFramework.DbClauses = New DbClauses(Me.ExtractLocalKeysPairs(Row))
+                    Subordinate.Delete(Cluases)
+                Next
+            Next
+
+            ' Call the base method to delete the records in the current table
+            DeleteOnDataBase = MyBase.Delete(Clauses)
+
+            ' Commit the transaction is needed
+            If TransactionOwner Then Query.CommitTransaction()
+
+        Catch ex As Exception
+            ' Rollback the transaction is needed and propagate the exception
+            If TransactionOwner Then Query.RollBackTransaction()
+            Throw ex
+
+        End Try
+    End Function
+
+    ' Insert in memory
+    Private Function InsertInMemory(Values As IDictionary(Of String, Object)) As Long
         ' Create the new row
         Dim NewRow As DataRow = Me.mDataSource.NewRow
 
@@ -197,26 +198,16 @@ Public MustInherit Class DataSourceHelper
             End If
         Next
 
-        ' Insert
+        ' Insert and return the new ID
         Me.mDataSource.Rows.Add(NewRow)
-    End Sub
+        Return -1
+    End Function
 
-    ' Update command
-    Protected Overridable Shadows Function Update(Values As IDictionary(Of String, Object), Clauses As SCFramework.DbClauses) As DataRow()
-        ' Check for safety
-        If (Me.Safety) And (Clauses Is Nothing OrElse Clauses.IsEmpty) Then
-            Throw New Exception("This command will update all row in the table!")
-        End If
-
-        ' If the source is nothing load all
-        If Me.mDataSource Is Nothing Then Me.SetSource()
-
+    ' Update in memory
+    Private Function UpdateInMemory(Values As IDictionary(Of String, Object), Clauses As SCFramework.DbClauses) As Long
         ' Get the filtered view
         Dim View As DataView = New DataView(Me.mDataSource)
         View.RowFilter = Clauses.ForFilter
-
-        ' Define the updated rows holder
-        Dim UpdatedRows As List(Of DataRow) = New List(Of DataRow)
 
         ' Lock the data source
         SyncLock Me.DataSourceLocker
@@ -229,89 +220,148 @@ Public MustInherit Class DataSourceHelper
                         Row(Field) = Values(Field)
                     End If
                 Next
-                ' Store the updated row
-                UpdatedRows.Add(Row.Row)
             Next
         End SyncLock
 
-        ' Return the updated rows
-        Return UpdatedRows.ToArray()
+        ' Return the updated rows count
+        Return View.Count
     End Function
 
-    ' Delete
-    Protected Overridable Function DbDelete(Clauses As SCFramework.DbClauses) As Long
-        ' Call the base method and reset the source
-        Me.mDataSource = Nothing
-        Return MyBase.Delete(Clauses)
+#End Region
+
+#Region " PROPERTIES "
+
+    ' Get the data source locker object
+    Public ReadOnly Property DataSourceLocker As Object
+        Get
+            Return Me.mDataSourceLocker
+        End Get
+    End Property
+
+#End Region
+
+#Region " PROTECTED "
+
+    ' Set the data table as a source filtered by where clausole
+    Public Overridable Function GetSource(Optional Clauses As DbClauses = Nothing, Optional KeepInMemory As Boolean = False) As DataTable
+        ' Check for cache
+        If Me.mDataSource IsNot Nothing And
+            Not Me.ClausesIsChanged(Clauses) Then Return Me.mDataSource
+
+        ' Store the clauses
+        Me.mLastClauses = Clauses
+
+        ' Source
+        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Me.mLastClauses)
+        Source.CaseSensitive = False
+        Source.Locale = CultureInfo.InvariantCulture
+
+        '' Data source columns settings
+        If Me.PrimaryKeys.Count > 0 Then SCFramework.Utils.DataTable.SetPrimaryKeys(Source, Me.PrimaryKeys.ToArray)
+        If Me.AutoNumbers.Count > 0 Then SCFramework.Utils.DataTable.SetAutoIncrements(Source, Me.AutoNumbers.ToArray)
+
+        ' Hold the status is needed
+        If KeepInMemory Then Me.mDataSource = Source
+
+        ' Return the filtered table
+        Return Me.mDataSource
     End Function
 
-    Protected Overridable Function DbInsert(Values As IDictionary(Of String, Object)) As Long
-        ' Call the base method and reset the source
-        Me.mDataSource = Nothing
-        Return MyBase.Insert(Values)
+    ' Delete command
+    Public Overrides Function Delete(Clauses As DbClauses) As Long
+        ' Check for safety
+        If (Me.Safety) And (Clauses Is Nothing OrElse Clauses.IsEmpty) Then
+            Throw New Exception("This command will delete all row in the table and related subordinate table items!")
+        End If
+
+        ' Check the case
+        Select Case Me.IsMemoryManaged
+            Case True
+                ' Delete from memeory
+                Return Me.DeleteInMemory(Clauses)
+
+            Case False
+                ' Delete directly from database
+                Return Me.DeleteOnDataBase(Clauses)
+
+        End Select
     End Function
 
-    Protected Overridable Function DbUpdate(Values As IDictionary(Of String, Object), Clauses As SCFramework.DbClauses) As Long
-        ' Call the base method and reset the source
-        Me.mDataSource = Nothing
-        Return MyBase.Update(Values, Clauses)
+    ' Insert command
+    Public Overrides Function Insert(Values As IDictionary(Of String, Object)) As Long
+        ' Check the case
+        Select Case Me.IsMemoryManaged
+            Case True
+                ' Delete directly from database
+                Return Me.InsertInMemory(Values)
+
+            Case False
+                ' Delete from memeory
+                Return MyBase.Insert(Values)
+
+        End Select
+    End Function
+
+    ' Update command
+    Public Overrides Function Update(Values As IDictionary(Of String, Object), Clauses As SCFramework.DbClauses) As Long
+        ' Check for safety
+        If (Me.Safety) And (Clauses Is Nothing OrElse Clauses.IsEmpty) Then
+            Throw New Exception("This command will update all row in the table!")
+        End If
+
+        ' Check the case
+        Select Case Me.IsMemoryManaged
+            Case True
+                ' Delete directly from database
+                Return Me.UpdateInMemory(Values, Clauses)
+
+            Case False
+                ' Delete from memeory
+                Return MyBase.Update(Values, Clauses)
+
+        End Select
     End Function
 
 #End Region
 
 #Region " PUBLIC "
 
-    ' Get the data table filtered by where clausole
-    Public Function Filter(Optional Clauses As DbClauses = Nothing) As DataTable
-        ' If the source is nothing load all
-        If Me.mDataSource Is Nothing Then Me.SetSource()
-
-        ' Filter the source
-        Dim View As DataView = New DataView(Me.mDataSource)
-        View.RowFilter = Clauses.ForFilter
-
-        ' Return the new datasource
-        Return View.ToTable()
-    End Function
-
-    ' Fix the changes on the database
-    Public Overridable Function AcceptChanges(Optional Query As SCFramework.DbQuery = Nothing) As Boolean
-        ' If the query is nothing create a new one
-        Dim Starter As Boolean = Query Is Nothing
-        If Starter Then
-            Query = New SCFramework.DbQuery()
-        End If
-
-        ' If the source is nothing load all
-        If Me.mDataSource Is Nothing Then Me.SetSource()
+    ' Fix the changes on the database using the data source held in memory
+    Public Overridable Function AcceptChanges() As Boolean
+        ' Get the current query object
+        Dim Query As SCFramework.DbQuery = Me.Query
+        ' Determine if must manage the transaction
+        Dim TransactionOwner As Boolean = Not Query.InTransaction
 
         Try
-            ' Start transaction if needed
-            If Starter Then Query.StartTransaction()
+            ' Check if not within a transaction
+            If TransactionOwner Then Query.StartTransaction()
+
+            ' Cycle subortdinates for update
+            For Each Subordinate As DataSourceHelper In Me.mSubordinates
+                Subordinate.AcceptChanges()
+            Next
 
             ' Lock the data source and try to update
             SyncLock Me.DataSourceLocker
                 Query.UpdateDatabase(Me.mDataSource)
             End SyncLock
 
-            ' Cycle subortdinates for update
-            For Each Subordinate As DataSourceHelper In Me.mSubordinates
-                Subordinate.AcceptChanges(Query)
-            Next
-
-            ' Commit the transaction
-            If Starter Then Query.CommitTransaction()
+            ' Commit the transaction is needed
+            If TransactionOwner Then Query.CommitTransaction()
 
         Catch ex As Exception
-            ' Rollback
-            If Starter Then Query.RollBackTransaction()
+            ' Rollback the transaction is needed and propagate the exception
+            If TransactionOwner Then Query.RollBackTransaction()
+            Throw ex
+
         End Try
     End Function
 
     ' Reject the soure changes and also on all the subordinates
     Public Overridable Sub RejectChanges()
         ' Reject the source changes
-        Me.Source.RejectChanges()
+        Me.mDataSource.RejectChanges()
 
         ' Cycle all the subordinates for rejectr the changes
         For Each Subordinate As DataSourceHelper In Me.mSubordinates
@@ -320,7 +370,7 @@ Public MustInherit Class DataSourceHelper
     End Sub
 
     ' Force to reload data source using the last cluases at the next source access
-    Public Sub ReloadDataSource()
+    Public Sub CleanDataSouce()
         Me.mDataSource = Nothing
     End Sub
 

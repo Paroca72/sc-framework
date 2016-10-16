@@ -8,7 +8,7 @@
 ' Versione 5.0.0
 '
 ' Created 05/11/2015
-' Updated 11/10/2016
+' Updated 16/10/2016
 '
 ' Integration: SqlClient, OleDB
 '
@@ -385,13 +385,13 @@ Public Class DbQuery
     End Function
 
     ' Generic insert command
-    Public Function Insert(TableName As String, Values As Hashtable) As Long
+    Public Function Insert(TableName As String, Values As IDictionary(Of String, Object)) As Long
         ' Execute the query command
         Return Me.Exec(DbSqlBuilder.BuildInsertCommand(TableName, Values), True)
     End Function
 
     ' Generic update command
-    Public Function Update(TableName As String, Values As Hashtable, Clause As SCFramework.DbClauses) As Long
+    Public Function Update(TableName As String, Values As IDictionary(Of String, Object), Clause As SCFramework.DbClauses) As Long
         ' Execute the query command
         Return Me.Exec(DbSqlBuilder.BuildUpdateCommand(TableName, Values, Clause), True)
     End Function
@@ -461,7 +461,7 @@ Public Class DbQuery
         End If
     End Function
 
-    ' Execute a sql command and put the result inside a hashtable
+    ' Execute a sql command and put the result inside a disctionary
     Public Function Dictionary(ByVal Sql As String, ByVal KeyField As String, ByVal ValueField As String) As Dictionary(Of Object, Object)
         Dim Source As DataTable = Me.Table(Sql)
         Return SCFramework.Utils.DataTable.ToDictionary(Source, KeyField, ValueField)

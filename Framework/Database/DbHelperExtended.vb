@@ -7,7 +7,7 @@
 ' Extend the helper class to link to database (new from version 5.x)
 ' Version 5.0.0
 ' Created 17/09/2015
-' Updated 29/10/2015
+' Updated 16/10/2016
 '
 '*************************************************************************************************
 
@@ -25,34 +25,19 @@ Public MustInherit Class DbHelperExtended
 
     ' Define the holders
     Private mTranslateColumns As List(Of String) = Nothing
-    Private mImagesColumns As List(Of String) = Nothing
-    Private mFilesColumns As List(Of String) = Nothing
-    Private mOrdersColumns As List(Of String) = Nothing
+    Private mImageColumns As List(Of String) = Nothing
+    Private mFileColumns As List(Of String) = Nothing
+    Private mOrderColumns As List(Of String) = Nothing
 
 
 #Region " PRIVATES "
 
     ' Check if string is contained in a list of strings
     Private Function Contains(List() As String, ToFind As String) As Boolean
-        Return CType(List, IList(Of String)).Contains(ToFind)
-    End Function
-
-    ' Filter the list and return only the item contained inside the writable fields
-    Private Function GetWritableFilteredColumns(Source As List(Of String)) As String()
-        ' The holder
-        Dim List As List(Of String) = New List(Of String)
-
-        ' Cycle all elements in list
-        For Each Column As String In Source
-            ' Check if conatined inside the writable columns list
-            If Me.WritableColumns.Contains(Column) Then
-                ' Add to filtered list
-                List.Add(Column)
-            End If
-        Next
-
-        ' Return the filtered list
-        Return List.ToArray
+        ' Check for empty values
+        If List Is Nothing Then Return False
+        ' Return if contained
+        Return List.Contains(ToFind)
     End Function
 
     ' Join the list
@@ -90,19 +75,19 @@ Public MustInherit Class DbHelperExtended
             ' Images
             If Row!DATA_TYPE = OleDb.OleDbType.Integer AndAlso _
                Me.Contains(Me.mPossibleImageColumnsName, Row!COLUMN_NAME) Then
-                Me.mImagesColumns.Add(Row!COLUMN_NAME)
+                Me.mImageColumns.Add(Row!COLUMN_NAME)
             End If
 
             ' Files
             If Row!DATA_TYPE = OleDb.OleDbType.Integer AndAlso _
                Me.Contains(Me.mPossibleFileColumnsName, Row!COLUMN_NAME) Then
-                Me.mFilesColumns.Add(Row!COLUMN_NAME)
+                Me.mFileColumns.Add(Row!COLUMN_NAME)
             End If
 
             ' Order
             If (Row!DATA_TYPE = OleDb.OleDbType.Integer Or Row!DATA_TYPE = OleDb.OleDbType.SmallInt) AndAlso _
                Me.Contains(Me.mPossibleOrderColumnsName, Row!COLUMN_NAME) Then
-                Me.mOrdersColumns.Add(Row!COLUMN_NAME)
+                Me.mOrderColumns.Add(Row!COLUMN_NAME)
             End If
         Next
     End Sub
@@ -128,19 +113,19 @@ Public MustInherit Class DbHelperExtended
             ' Images
             If Row!DataTypeName = GetType(System.Int32).Name AndAlso _
                Me.Contains(Me.mPossibleImageColumnsName, Row!ColumnName) Then
-                Me.mImagesColumns.Add(Row!ColumnName)
+                Me.mImageColumns.Add(Row!ColumnName)
             End If
 
             ' Files
             If Row!DataTypeName = GetType(System.Int32).Name AndAlso _
                Me.Contains(Me.mPossibleFileColumnsName, Row!ColumnName) Then
-                Me.mFilesColumns.Add(Row!ColumnName)
+                Me.mFileColumns.Add(Row!ColumnName)
             End If
 
             ' Order
             If (Row!DataTypeName = GetType(System.Int32).Name Or Row!DataTypeName = GetType(System.Int16).Name) AndAlso _
                Me.Contains(Me.mPossibleOrderColumnsName, Row!ColumnName) Then
-                Me.mOrdersColumns.Add(Row!ColumnName)
+                Me.mOrderColumns.Add(Row!ColumnName)
             End If
         Next
     End Sub
@@ -154,21 +139,24 @@ Public MustInherit Class DbHelperExtended
         ' Call the super
         MyBase.OnAnalizeTable()
 
+        ' Private query holder
+        Dim Query As SCFramework.DbQuery = Me.Query
+
         ' Holder
-        Dim Connection As DbConnection = Bridge.Query.GetConnection()
-        Dim Provider As DbQuery.ProvidersList = Bridge.Query.GetProvider()
+        Dim Connection As DbConnection = Query.GetConnection()
+        Dim Provider As DbQuery.ProvidersList = Query.GetProvider()
 
         ' Open
-        Dim MustBeOpen As Boolean = (Bridge.Query.GetConnection().State = ConnectionState.Closed)
+        Dim MustBeOpen As Boolean = (Query.GetConnection().State = ConnectionState.Closed)
         If MustBeOpen Then
             Connection.Open()
         End If
 
         ' Define the holder
         Me.mTranslateColumns = New List(Of String)
-        Me.mImagesColumns = New List(Of String)
-        Me.mFilesColumns = New List(Of String)
-        Me.mOrdersColumns = New List(Of String)
+        Me.mImageColumns = New List(Of String)
+        Me.mFileColumns = New List(Of String)
+        Me.mOrderColumns = New List(Of String)
 
         ' Select the analisys by provider
         Select Case Provider
@@ -182,94 +170,88 @@ Public MustInherit Class DbHelperExtended
         End If
     End Sub
 
-    ' Get the source and add some extra information
-    Protected Overrides Function GetSource(Clauses As DbSqlBuilder.Clauses) As DataTable
-        ' Get the source from the base class
-        Dim Source As DataTable = MyBase.GetSource(Clauses)
-
-        ' Translations
-        For Each Column As String In Me.mTranslateColumns
-            SCFramework.Translations.TranslateColumn(Source, Column)
-        Next
-
-        ' Language less
-        If Me.mTranslateColumns.Count > 0 Then
-            SCFramework.Translations.AddLanguageLessColumn(Source, "LANGUAGE_LESS", Me.mTranslateColumns.ToArray)
-        End If
-
-        ' Images
-        For Each Column As String In Me.mImagesColumns
-            ' TODO
-            'SCFramework.ManageImages.AddExtraInfosColumn(Source, SCFramework.ManageFiles.ExtraInfoType.RelativePath, Column & "_URL", Column)
-        Next
-
-        ' Files
-        For Each Column As String In Me.mFilesColumns
-            ' TODO
-            'SCFramework.ManageImages.AddExtraInfosColumn(Source, SCFramework.ManageFiles.ExtraInfoType.RelativePath, Column & "_URL", Column)
-        Next
-
-        ' Return
-        Return Source
-    End Function
-
     ' Delete
-    Protected Overrides Function Delete(Clauses As DbSqlBuilder.Clauses, Optional Safety As Boolean = True) As Long
-        ' Get the source datatable
-        Dim Source As DataTable = Me.GetSource(Clauses)
+    Public Overrides Function Delete(Clauses As SCFramework.DbClauses) As Long
+        ' Get the current query object
+        Dim Query As SCFramework.DbQuery = Me.Query
+        ' Determine if must manage the transaction
+        Dim TransactionOwner As Boolean = Not Query.InTransaction
 
-        ' Get the filtered list
-        Dim Translations() As String = Me.GetWritableFilteredColumns(Me.mTranslateColumns)
-        Dim Images() As String = Me.GetWritableFilteredColumns(Me.mImagesColumns)
-        Dim Files() As String = Me.GetWritableFilteredColumns(Me.mFilesColumns)
+        Try
+            ' Check if not within a transaction
+            If TransactionOwner Then Query.StartTransaction()
 
-        ' Extract the values
-        Dim TranslationValues() As String = SCFramework.Utils.ExtractStringValues(Source, Translations)
-        Dim ImageValues() As Long = SCFramework.Utils.ExtractIntValues(Source, Images)
-        Dim FileValues() As Long = SCFramework.Utils.ExtractIntValues(Source, Files)
+            ' Check if have references to delete
+            If Me.FileColumns.Count > 0 Or Me.ImageColumns.Count > 0 Or Me.TranslateColumns.Count > 0 Then
+                ' TODO: delete translation and images references
+            End If
 
-        ' Delete translations
-        SCFramework.Translations.Delete(TranslationValues)
-        ' TODO
-        'SCFramework.ManageFiles.Delete(ImageValues)
-        'SCFramework.ManageFiles.Delete(FileValues)
+            ' Call the base method to delete records on the current table
+            Delete = MyBase.Delete(Clauses)
 
-        ' Super
-        Return MyBase.Delete(Clauses, Safety)
+            ' Commit the transaction is needed
+            If TransactionOwner Then Query.CommitTransaction()
+
+        Catch ex As Exception
+            ' Rollback the transaction is needed and propagate the exception
+            If TransactionOwner Then Query.RollBackTransaction()
+            Throw ex
+
+        End Try
     End Function
+
+#End Region
+
+#Region " PROPERTIES "
+
+    ' The order key columns list
+    Public Property OrderColumns As List(Of String)
+        Get
+            Return Me.mOrderColumns
+        End Get
+        Set(value As List(Of String))
+            Me.mOrderColumns = value
+        End Set
+    End Property
+
+    ' The file key columns list
+    Public Property FileColumns As List(Of String)
+        Get
+            Return Me.mFileColumns
+        End Get
+        Set(value As List(Of String))
+            Me.mFileColumns = value
+        End Set
+    End Property
+
+    ' The image key columns list
+    Public Property ImageColumns As List(Of String)
+        Get
+            Return Me.mImageColumns
+        End Get
+        Set(value As List(Of String))
+            Me.mImageColumns = value
+        End Set
+    End Property
+
+    ' The translate key columns list
+    Public Property TranslateColumns As List(Of String)
+        Get
+            Return Me.mTranslateColumns
+        End Get
+        Set(value As List(Of String))
+            Me.mTranslateColumns = value
+        End Set
+    End Property
 
 #End Region
 
 #Region " PUBLIC "
 
-    ' Get the linked database table name.
+    ' Get the linked database view name.
     ' If not overrided the view table name is the same of the linked table name.
     Public Overridable Function GetViewName() As String
         Return Me.GetTableName()
-    End Function
-
-    ' Return an ordered dataview
-    Public Function GetView(Clauses As DbSqlBuilder.Clauses) As DataView
-        ' Get the source
-        Dim Source As DataTable = Me.GetSource(Clauses)
-        ' Get the view
-        Dim View As DataView = Source.DefaultView
-
-        ' Improove the sorting
-        If mOrdersColumns.Count > 0 Then
-            View.Sort = Me.Join(Me.mOrdersColumns)
-        End If
-
-        ' Return the view
-        Return View
-    End Function
-
-    Public Function GetView(Value As Long) As DataView
-        Return Me.GetView(Me.ToClauses(Value))
-    End Function
-
-    Public Function GetView() As DataView
-        Return Me.GetView(New DbSqlBuilder.Clauses())
     End Function
 
 #End Region

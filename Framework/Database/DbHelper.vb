@@ -7,7 +7,7 @@
 ' Helper class to link to database (new from version 5.x)
 ' Version 5.0.0
 ' Created 10/08/2015
-' Updated 04/10/2016
+' Updated 16/10/2016
 '
 '*************************************************************************************************
 
@@ -22,6 +22,7 @@ Public MustInherit Class DbHelper
     Private mAutoNumberColumns As List(Of String) = Nothing
     Private mWritableColumns As List(Of String) = Nothing
 
+    Private mQuery As SCFramework.DbQuery = Nothing
     Private mSubordinates As List(Of DbHelper) = Nothing
     Private mSafety As Boolean = True
 
@@ -127,61 +128,45 @@ Public MustInherit Class DbHelper
         Return Clauses
     End Function
 
-    ' Delete command
-    Protected Overridable Function Delete(Clauses As SCFramework.DbClauses) As Long
-        ' Check for safety
-        If (Me.mSafety) And (Clauses Is Nothing OrElse Clauses.IsEmpty) Then
-            Throw New Exception("This command will delete all row in the table!")
-        End If
-
-        ' Execute the command to delete
-        Return SCFramework.Bridge.Query.Delete(Me.GetTableName(), Clauses)
-    End Function
-
-    ' Insert command
-    Protected Overridable Function Insert(Values As IDictionary(Of String, Object)) As Long
-        Return Bridge.Query.Insert(Me.GetTableName(), Me.FilterForWritableColumns(Values))
-    End Function
-
-    ' Update command
-    Protected Overridable Function Update(Values As IDictionary(Of String, Object), Clauses As SCFramework.DbClauses) As Long
-        ' Holders
-        Dim UpdateFields As Hashtable = New Hashtable()
-
-        ' Create the sql update code
-        For Each Field As String In Values.Keys
-            ' Check if the column is to update
-            If Me.WritableColumns.Contains(Field) And Not Me.mPrimaryKeysColumns.Contains(Field) Then
-                ' Add to the set value list to update
-                UpdateFields.Add(Field, Values(Field))
-            End If
-        Next
-
-        ' Check for safety
-        If (Me.Safety) And (Clauses Is Nothing OrElse Clauses.IsEmpty) Then
-            Throw New Exception("This command will update all row in the table!")
-        End If
-
-        ' Create the command and execute it
-        Return SCFramework.Bridge.Query.Update(Me.GetTableName(), UpdateFields, Clauses)
-    End Function
-
 #End Region
 
 #Region " PROPERTIES "
 
-    ' The primary key columns list
-    Public ReadOnly Property PrimaryKeys As List(Of String)
+    ' Get the query to use
+    Public Property Query As SCFramework.DbQuery
+        Set(value As SCFramework.DbQuery)
+            Me.mQuery = value
+        End Set
         Get
-            Return Me.mPrimaryKeysColumns
+            If Me.mQuery Is Nothing Then
+                ' Return the global one if the base is not empty
+                Return Me.mQuery
+
+            Else
+                ' Else create a new one
+                Return SCFramework.Bridge.Query
+            End If
         End Get
     End Property
 
+    ' The primary key columns list
+    Public Property PrimaryKeys As List(Of String)
+        Get
+            Return Me.mPrimaryKeysColumns
+        End Get
+        Set(value As List(Of String))
+            Me.mPrimaryKeysColumns = value
+        End Set
+    End Property
+
     ' The autonumber columns list
-    Public ReadOnly Property AutoNumbers As List(Of String)
+    Public Property AutoNumbers As List(Of String)
         Get
             Return Me.mAutoNumberColumns
         End Get
+        Set(value As List(Of String))
+            Me.mAutoNumberColumns = value
+        End Set
     End Property
 
     ' The writable column list
@@ -210,12 +195,15 @@ Public MustInherit Class DbHelper
 
     ' Analize the table and store all usefull data
     Public Overridable Sub OnAnalizeTable()
+        ' Private query holder
+        Dim Query As SCFramework.DbQuery = Me.Query
+
         ' Holder
-        Dim Connection As DbConnection = Bridge.Query.GetConnection()
-        Dim Provider As DbQuery.ProvidersList = Bridge.Query.GetProvider()
+        Dim Connection As DbConnection = Query.GetConnection()
+        Dim Provider As DbQuery.ProvidersList = Query.GetProvider()
 
         ' Open
-        Dim MustBeOpen As Boolean = (Bridge.Query.GetConnection().State = ConnectionState.Closed)
+        Dim MustBeOpen As Boolean = (Query.GetConnection().State = ConnectionState.Closed)
         If MustBeOpen Then
             Connection.Open()
         End If
@@ -236,6 +224,45 @@ Public MustInherit Class DbHelper
             Connection.Close()
         End If
     End Sub
+
+    ' Delete command
+    Public Overridable Function Delete(Clauses As SCFramework.DbClauses) As Long
+        ' Check for safety
+        If (Me.mSafety) And (Clauses Is Nothing OrElse Clauses.IsEmpty) Then
+            Throw New Exception("This command will delete all row in the table!")
+        End If
+
+        ' Create the query object is needed and execute the delete command
+        Return Me.Query.Delete(Me.GetTableName(), Clauses)
+    End Function
+
+    ' Insert command
+    Public Overridable Function Insert(Values As IDictionary(Of String, Object)) As Long
+        Return Me.Query.Insert(Me.GetTableName(), Me.FilterForWritableColumns(Values))
+    End Function
+
+    ' Update command
+    Public Overridable Function Update(Values As IDictionary(Of String, Object), Clauses As SCFramework.DbClauses) As Long
+        ' Check for safety
+        If (Me.Safety) And (Clauses Is Nothing OrElse Clauses.IsEmpty) Then
+            Throw New Exception("This command will update all row in the table!")
+        End If
+
+        ' Holders
+        Dim UpdateFields As Dictionary(Of String, Object) = New Dictionary(Of String, Object)
+
+        ' Create the sql update code
+        For Each Field As String In Values.Keys
+            ' Check if the column is to update
+            If Me.WritableColumns.Contains(Field) And Not Me.mPrimaryKeysColumns.Contains(Field) Then
+                ' Add to the set value list to update
+                UpdateFields.Add(Field, Values(Field))
+            End If
+        Next
+
+        ' Create the command and execute it
+        Return Me.Query.Update(Me.GetTableName(), UpdateFields, Clauses)
+    End Function
 
 #End Region
 

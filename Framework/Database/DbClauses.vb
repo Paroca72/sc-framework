@@ -7,7 +7,7 @@
 ' Sql builder manager
 ' Version 5.0.0
 ' Created 10/10/2016
-' Updated 10/10/2016
+' Updated 16/10/2016
 '
 '*************************************************************************************************
 
@@ -42,6 +42,8 @@ Public Class DbClauses
     Private mClauses As List(Of SingleClause) = New List(Of SingleClause)
 
 
+#Region " CONSTRUCTOR "
+
     ' Contructor
     Public Sub New()
     End Sub
@@ -53,6 +55,10 @@ Public Class DbClauses
     Public Sub New(Clauses As IDictionary(Of String, Object))
         Me.Add(Clauses)
     End Sub
+
+#End Region
+
+#Region " PUBLIC "
 
     ' Add a clause
     Public Sub Add(Column As String, Comparer As ComparerType, Value As Object, GroupAsAnd As Boolean)
@@ -152,15 +158,24 @@ Public Class DbClauses
         Return Filter
     End Function
 
+    ' Check if equal to another clauses
+    Public Function IsEqual(Clauses As SCFramework.DbClauses) As Boolean
+        Return Clauses IsNot Nothing AndAlso Me.ForSql.Equals(Clauses.ForSql)
+    End Function
+
+#End Region
+
+#Region " PROPERTIES "
+
     ' Build the where clauses for sql
-    Public ReadOnly Property ForSql As Boolean
+    Public ReadOnly Property ForSql As String
         Get
             Return Me.Builder(False)
         End Get
     End Property
 
     ' Build the where clauses for data filter
-    Public ReadOnly Property ForFilter As Boolean
+    Public ReadOnly Property ForFilter As String
         Get
             Return Me.Builder(True)
         End Get
@@ -172,5 +187,7 @@ Public Class DbClauses
             Return Me.mClauses.Count = 0
         End Get
     End Property
+
+#End Region
 
 End Class
