@@ -482,7 +482,8 @@ Public Class DbQuery
     End Function
 
     ' Update the database
-    Public Sub UpdateDatabase(ByVal Source As DataTable, ByVal TableName As String, Optional ByVal ContinueOnError As Boolean = False)
+    Public Sub UpdateDatabase(ByVal Source As DataTable, ByVal TableName As String,
+                              Optional ByVal ContinueOnError As Boolean = False)
         ' Fix the table name quotes
         If Not TableName.StartsWith("[") And Not TableName.EndsWith("]") Then
             TableName = String.Format("[{0}]", TableName)
@@ -491,9 +492,8 @@ Public Class DbQuery
         ' Create a generic selection command
         Dim SelectSql As String = String.Format("SELECT * FROM {0} WHERE 1 <> 1", TableName)
 
-        ' Create the data adapter
+        ' Create the data adapter and the command builder
         Dim DataAdapter As DbDataAdapter = DbProviderFactories.GetFactory(Me.mConnection).CreateDataAdapter()
-        ' Create the command builder
         Dim CommandBuilder As DbCommandBuilder = DbProviderFactories.GetFactory(Me.mConnection).CreateCommandBuilder()
 
         ' Check for exists

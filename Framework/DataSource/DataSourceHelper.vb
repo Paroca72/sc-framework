@@ -18,6 +18,7 @@ Public MustInherit Class DataSourceHelper
     ' Holders
     Private mDataSource As DataTable = Nothing
     Private mDataSourceLocker As Object = New Object()
+    Private mHasChanges As Boolean = False
 
     Private mSubordinates As List(Of DataSourceHelper) = Nothing
     Private mLastClauses As SCFramework.DbClauses = Nothing
@@ -185,6 +186,24 @@ Public MustInherit Class DataSourceHelper
         End Try
     End Function
 
+    ' Get the autonumber first value 
+    Private Function GetIdentityFromMemory(Row As DataRow) As Long
+        ' Extract the identity if exists
+        Dim Keys As Dictionary(Of String, Object) = Me.ExtractLocalKeysPairs(Row)
+
+        ' Cycle all keys
+        For Each Pairs As KeyValuePair(Of String, Object) In Keys
+            ' Check for autonumber and is is number
+            If Me.AutoNumbers.Contains(Pairs.Key) AndAlso IsNumeric(Pairs.Value) Then
+                ' Return
+                Return Pairs.Value
+            End If
+        Next
+
+        ' Else return -1
+        Return -1
+    End Function
+
     ' Insert in memory
     Private Function InsertInMemory(Values As IDictionary(Of String, Object)) As Long
         ' Create the new row
@@ -200,7 +219,7 @@ Public MustInherit Class DataSourceHelper
 
         ' Insert and return the new ID
         Me.mDataSource.Rows.Add(NewRow)
-        Return -1
+        Return Me.GetIdentityFromMemory(NewRow)
     End Function
 
     ' Update in memory
@@ -238,6 +257,13 @@ Public MustInherit Class DataSourceHelper
         End Get
     End Property
 
+    ' True if has changes
+    Public ReadOnly Property HasChanges() As Boolean
+        Get
+            Return Me.mHasChanges
+        End Get
+    End Property
+
 #End Region
 
 #Region " PROTECTED "
@@ -256,12 +282,17 @@ Public MustInherit Class DataSourceHelper
         Source.CaseSensitive = False
         Source.Locale = CultureInfo.InvariantCulture
 
-        '' Data source columns settings
+        ' Data source columns settings
         If Me.PrimaryKeys.Count > 0 Then SCFramework.Utils.DataTable.SetPrimaryKeys(Source, Me.PrimaryKeys.ToArray)
         If Me.AutoNumbers.Count > 0 Then SCFramework.Utils.DataTable.SetAutoIncrements(Source, Me.AutoNumbers.ToArray)
 
+        ' TODO: all other columns
+
         ' Hold the status is needed
-        If KeepInMemory Then Me.mDataSource = Source
+        If KeepInMemory Then
+            Me.mDataSource = Source
+            Me.mHasChanges = False
+        End If
 
         ' Return the filtered table
         Return Me.mDataSource
@@ -278,11 +309,12 @@ Public MustInherit Class DataSourceHelper
         Select Case Me.IsMemoryManaged
             Case True
                 ' Delete from memeory
-                Return Me.DeleteInMemory(Clauses)
+                Delete = Me.DeleteInMemory(Clauses)
+                Me.mHasChanges = Me.mHasChanges Or Delete > 0
 
             Case False
                 ' Delete directly from database
-                Return Me.DeleteOnDataBase(Clauses)
+                Delete = Me.DeleteOnDataBase(Clauses)
 
         End Select
     End Function
@@ -293,11 +325,12 @@ Public MustInherit Class DataSourceHelper
         Select Case Me.IsMemoryManaged
             Case True
                 ' Delete directly from database
-                Return Me.InsertInMemory(Values)
+                Insert = Me.InsertInMemory(Values)
+                Me.mHasChanges = Me.mHasChanges Or Insert > 0
 
             Case False
                 ' Delete from memeory
-                Return MyBase.Insert(Values)
+                Insert = MyBase.Insert(Values)
 
         End Select
     End Function
@@ -313,11 +346,12 @@ Public MustInherit Class DataSourceHelper
         Select Case Me.IsMemoryManaged
             Case True
                 ' Delete directly from database
-                Return Me.UpdateInMemory(Values, Clauses)
+                Update = Me.UpdateInMemory(Values, Clauses)
+                Me.mHasChanges = Me.mHasChanges Or Update > 0
 
             Case False
                 ' Delete from memeory
-                Return MyBase.Update(Values, Clauses)
+                Update = MyBase.Update(Values, Clauses)
 
         End Select
     End Function
@@ -349,6 +383,7 @@ Public MustInherit Class DataSourceHelper
 
             ' Commit the transaction is needed
             If TransactionOwner Then Query.CommitTransaction()
+            Me.mHasChanges = False
 
         Catch ex As Exception
             ' Rollback the transaction is needed and propagate the exception
@@ -360,18 +395,20 @@ Public MustInherit Class DataSourceHelper
 
     ' Reject the soure changes and also on all the subordinates
     Public Overridable Sub RejectChanges()
-        ' Reject the source changes
-        Me.mDataSource.RejectChanges()
-
         ' Cycle all the subordinates for rejectr the changes
         For Each Subordinate As DataSourceHelper In Me.mSubordinates
             Subordinate.RejectChanges()
         Next
+
+        ' Reject the source changes
+        Me.mDataSource.RejectChanges()
+        Me.mHasChanges = False
     End Sub
 
     ' Force to reload data source using the last cluases at the next source access
     Public Sub CleanDataSouce()
         Me.mDataSource = Nothing
+        Me.mHasChanges = False
     End Sub
 
 #End Region

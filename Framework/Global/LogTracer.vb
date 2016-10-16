@@ -13,7 +13,7 @@
 
 
 Public Class LogTracer
-    Inherits SCFramework.DbHelper
+    Inherits SCFramework.DataSourceHelper
 
 #Region " MUST OVERRIDES "
 
@@ -31,22 +31,6 @@ Public Class LogTracer
         Unknown = 0
         Login = 1
     End Enum
-
-    ' Get the source
-    Public Function GetSource(Optional Clauses As DbClauses = Nothing) As DataTable
-        ' Source
-        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
-        Source.CaseSensitive = False
-        Source.Locale = CultureInfo.InvariantCulture
-
-        ' Set the table column properties
-        If Me.PrimaryKeys.Count > 0 Then SCFramework.Utils.DataTable.SetPrimaryKeys(Source, Me.PrimaryKeys.ToArray)
-        If Me.AutoNumbers.Count > 0 Then SCFramework.Utils.DataTable.SetAutoIncrements(Source, Me.AutoNumbers.ToArray)
-
-        ' Return the filtered table
-        Return Source
-    End Function
-
 
     ' Trace a login action
     Public Sub RecLoginAttempt([Alias] As String, Password As String, Success As Boolean)
@@ -68,14 +52,14 @@ Public Class LogTracer
 
     ' Delete all trace in the history.
     ' Note that if you not disable the auto-safe before call this method it will throw an exception.
-    Public Shadows Sub Delete()
-        MyBase.Delete(Nothing)
-    End Sub
+    Public Overloads Function Delete() As Long
+        Return MyBase.Delete(Nothing)
+    End Function
 
     ' Delete the trace log filtered by the type.
-    Public Shadows Sub Delete(Filter As LogTracer.Actions)
-        MyBase.Delete(New SCFramework.DbClauses("TYPE", Filter))
-    End Sub
+    Public Overloads Function Delete(Filter As LogTracer.Actions) As Long
+        Return Me.Delete(New SCFramework.DbClauses("TYPE", Filter))
+    End Function
 
 #End Region
 
