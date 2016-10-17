@@ -34,6 +34,7 @@ Public Class DbClauses
         Public Column As String = Nothing
         Public Comparer As ComparerType = ComparerType.Equal
         Public Value As Object = Nothing
+        Public Sql As String = Nothing
         Public GroupAsAnd As Boolean = True
 
     End Class
@@ -87,6 +88,17 @@ Public Class DbClauses
         Next
     End Sub
 
+    ' Add a sql
+    Public Sub Add(Sql As String, GroupAsAnd As Boolean)
+        ' Create the single clause
+        Dim Clause As SingleClause = New SingleClause()
+        Clause.Sql = Sql
+        Clause.GroupAsAnd = GroupAsAnd
+
+        ' Add to clauses list
+        Me.mClauses.Add(Clause)
+    End Sub
+
     ' Add a list of clauses
     Public Sub Add(Clauses() As SCFramework.DbClauses, GroupAsAnd As Boolean)
         ' Cycle all clauses
@@ -108,9 +120,14 @@ Public Class DbClauses
 
         ' Cycle all clauses
         For Each Clause As SingleClause In Me.mClauses
-            ' Check if the clause is an object 
-            If Clause.Clauses IsNot Nothing Then
-                ' Add the single clauses
+            ' Check all cases
+            If Clause.Sql IsNot Nothing Then
+                ' Check if the clause is an object 
+                If Not SCFramework.Utils.String.IsEmptyOrWhite(Filter) Then Filter &= IIf(Clause.GroupAsAnd, " AND ", " OR ")
+                Filter &= "(" & Clause.Sql & ")"
+
+            ElseIf Clause.Clauses IsNot Nothing Then
+                ' Check if the clause is an object 
                 If Not SCFramework.Utils.String.IsEmptyOrWhite(Filter) Then Filter &= IIf(Clause.GroupAsAnd, " AND ", " OR ")
                 Filter &= "(" & Clause.Clauses.Builder(ForFilter) & ")"
 
