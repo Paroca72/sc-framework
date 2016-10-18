@@ -7,7 +7,7 @@
 ' Data source helper
 ' Version 5.0.0
 ' Created 10/10/2016
-' Updated 16/10/2016
+' Updated 18/10/2016
 '
 '*************************************************************************************************
 
@@ -112,67 +112,63 @@ Public MustInherit Class DataSourceHelper
 
 #Region " DATABASE "
 
-    ' Update the Sql database
-    Private Sub UpdateSqlDatabase(ByVal Source As DataTable)
-        ' Create the data adapter and the command builder
-        Dim DataAdapter As SqlClient.SqlDataAdapter = New SqlClient.SqlDataAdapter("", Me.Query.GetConnection)
+    ' Holde the identity column name
+    Private IdentityColumnName As String = Nothing
 
-        Dim CommandBuilder As DbCommandBuilder = DbProviderFactories.GetFactory(Me.mConnection).CreateCommandBuilder()
+    ' Get the first identity column name
+    Private Function ExtractIdentityField(Source As DataTable) As String
+        ' Cycle all keys
+        For Each Column As DataColumn In Source.Columns
+            ' Check for autonumber
+            If Me.AutoNumbers.Contains(Column.ColumnName) And
+                Me.PrimaryKeys.Contains(Column.ColumnName) Then Return Column.ColumnName
+        Next
+        ' Else return nothing
+        Return Nothing
+    End Function
 
-        ' Check for exists
-        If DataAdapter IsNot Nothing And CommandBuilder IsNot Nothing Then
-            ' Set the quotes character
-            CommandBuilder.QuotePrefix = DbSqlBuilder.QuotePrefix
-            CommandBuilder.QuoteSuffix = DbSqlBuilder.QuoteSuffix
+    ' Update the identity field
+    Private Sub HandleOldDbRowUpdated(ByVal sender As Object, ByVal e As OleDb.OleDbRowUpdatedEventArgs)
+        If e.Status = UpdateStatus.Continue AndAlso e.StatementType = StatementType.Insert Then
+            ' Get the Identity column value
+            e.Row(Me.IdentityColumnName) = Me.Query.Indentity()
+            e.Row.AcceptChanges()
+        End If
+    End Sub
 
-            ' Create the command
-            Dim Command As DbCommand = Me.mConnection.CreateCommand()
-            Command.CommandText = SelectSql
-            Command.CommandTimeout = Me.mCommandTimeout
-            Command.Transaction = 
-
-            ' Assign the command and update the database
-            DataAdapter.ContinueUpdateOnError = False
-            DataAdapter.SelectCommand = Command
-            DataAdapter.Update(Source)
+    Private Sub HandleSqlRowUpdated(ByVal sender As Object, ByVal e As SqlClient.SqlRowUpdatedEventArgs)
+        If e.Status = UpdateStatus.Continue AndAlso e.StatementType = StatementType.Insert Then
+            ' Get the Identity column value
+            e.Row(Me.IdentityColumnName) = Me.Query.Indentity()
+            e.Row.AcceptChanges()
         End If
     End Sub
 
     ' Update the database
     Private Sub UpdateDatabase(ByVal Source As DataTable)
-        ' Fix the table name quotes
-        Dim Table As String = Me.GetTableName()
-        If Not Table.StartsWith("[") And Not Table.EndsWith("]") Then
-            Table = String.Format("[{0}]", Table)
+        ' Create the adapter and check for empty value
+        Dim Adapter As Common.DbDataAdapter = Me.Query.CreateAdapter(Me.GetTableName())
+        If Adapter Is Nothing Then Exit Sub
+
+        ' Get the identity column name
+        Me.IdentityColumnName = Me.ExtractIdentityField(Source)
+
+        ' Select the case by the provider only if have an identity field to update
+        If Me.IdentityColumnName IsNot Nothing Then
+            Select Case Me.Query.GetProvider
+                Case SCFramework.DbQuery.ProvidersList.OleDb
+                    AddHandler CType(Adapter, OleDb.OleDbDataAdapter).RowUpdated, AddressOf HandleOldDbRowUpdated
+
+                Case SCFramework.DbQuery.ProvidersList.SqlClient
+                    AddHandler CType(Adapter, SqlClient.SqlDataAdapter).RowUpdated, AddressOf HandleSqlRowUpdated
+
+            End Select
         End If
 
-        ' Create a generic selection command
-        Dim SelectSql As String = String.Format("SELECT * FROM {0} WHERE 1 <> 1", Table)
-
-        ' Call the procedure
-        Select Case Me.Query.GetProvider
-            Case SCFramework.DbQuery.ProvidersList.OleDb
-            Case SCFramework.DbQuery.ProvidersList.SqlClient : Me.UpdateSqlDatabase(Source)
-        End Select
+        ' Set the adapter and call the update
+        Adapter.ContinueUpdateOnError = False
+        Adapter.Update(Source)
     End Sub
-
-    ' Get the autonumber first value 
-    Private Function GetIdentityFromMemory(Row As DataRow) As Long
-        ' Extract the identity if exists
-        Dim Keys As Dictionary(Of String, Object) = Me.ExtractLocalKeysPairs(Row)
-
-        ' Cycle all keys
-        For Each Pairs As KeyValuePair(Of String, Object) In Keys
-            ' Check for autonumber and is is number
-            If Me.AutoNumbers.Contains(Pairs.Key) AndAlso IsNumeric(Pairs.Value) Then
-                ' Return
-                Return Pairs.Value
-            End If
-        Next
-
-        ' Else return -1
-        Return -1
-    End Function
 
 #End Region
 
@@ -254,6 +250,11 @@ Public MustInherit Class DataSourceHelper
                 Next
             End SyncLock
 
+            ' If if not memory managed update the database
+            If Not Me.IsMemoryManaged Then
+                Me.UpdateDatabase(Source)
+            End If
+
             ' Return the deleted rows count
             Return Source.Rows.Count
 
@@ -289,14 +290,27 @@ Public MustInherit Class DataSourceHelper
             ' Insert the new ID
             Me.mDataSource.Rows.Add(NewRow)
 
+            ' If if not memory managed update the database
+            If Not Me.IsMemoryManaged Then
+                Me.UpdateDatabase(Source)
+            End If
+
+            ' Check if exists an identity field
+            Dim IdentityField As String = Me.ExtractIdentityField(Source)
+            If IdentityField IsNot Nothing And IsNumeric(NewRow(IdentityField)) Then
+                ' Return the identity field value
+                Return NewRow(IdentityField)
+
+            Else
+                ' Else return nothing
+                Return -1
+            End If
+
         Catch ex As Exception
             ' If an error roll back and propagate the exception
             Source.RejectChanges()
             Throw ex
         End Try
-
-        ' Return the identity
-        Return Me.GetIdentityFromMemory(NewRow)
     End Function
 
     ' Update command
@@ -325,14 +339,19 @@ Public MustInherit Class DataSourceHelper
                 Next
             End SyncLock
 
+            ' If if not memory managed update the database
+            If Not Me.IsMemoryManaged Then
+                Me.UpdateDatabase(Source)
+            End If
+
+            ' Return the updated rows count
+            Return Source.Rows.Count
+
         Catch ex As Exception
             ' If an error roll back and propagate the exception
             Source.RejectChanges()
             Throw ex
         End Try
-
-        ' Return the updated rows count
-        Return Source.Rows.Count
     End Function
 
 #End Region

@@ -8,7 +8,7 @@
 ' Versione 5.0.0
 '
 ' Created 05/11/2015
-' Updated 16/10/2016
+' Updated 18/10/2016
 '
 ' Integration: SqlClient, OleDB
 '
@@ -265,7 +265,7 @@ Public Class DbQuery
         End If
     End Sub
 
-    ' Return true if a transaction is already started
+    ' If the have an active transaction
     Public Function InTransaction() As Boolean
         Return Me.mTransaction IsNot Nothing
     End Function
@@ -390,6 +390,18 @@ Public Class DbQuery
         Return Me.Exec(DbSqlBuilder.BuildInsertCommand(TableName, Values), True)
     End Function
 
+    ' Get the last identity
+    Public Function Indentity() As Long
+        ' Check for database connection
+        Me.CheckDbConnection()
+
+        ' Choice the action by the provider
+        Select Case Me.GetProvider()
+            Case ProvidersList.OleDb : Return Me.ExecuteQuery("SELECT @@IDENTITY", True)
+            Case ProvidersList.SqlClient : Return Me.ExecuteQuery("SELECT Scope_Identity();", True)
+        End Select
+    End Function
+
     ' Generic update command
     Public Function Update(TableName As String, Values As IDictionary(Of String, Object), Clause As SCFramework.DbClauses) As Long
         ' Execute the query command
@@ -449,6 +461,16 @@ Public Class DbQuery
         Return Me.Table(DbSqlBuilder.BuildSelectCommand(TableName, Nothing, Nothing), TableName)
     End Function
 
+    ' Get and empty table
+    Public Function EmptyTable(TableName As String) As DataTable
+        ' Create a false clause for give back an empty table
+        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
+        Clauses.Add("1 <> 1", False)
+
+        ' Return the table
+        Return Me.Table(TableName, Nothing, Clauses)
+    End Function
+
     ' Execute a sql command and get the first row details
     Public Function Row(ByVal Sql As String) As DataRow
         ' Get the table
@@ -481,9 +503,8 @@ Public Class DbQuery
         Return SCFramework.Utils.DataTable.ToArray(Source, Field)
     End Function
 
-    ' Update the database
-    Public Sub UpdateDatabase(ByVal Source As DataTable, ByVal TableName As String,
-                              Optional ByVal ContinueOnError As Boolean = False)
+    ' Create a generic adapter
+    Public Function CreateAdapter(ByVal TableName As String) As DbDataAdapter
         ' Fix the table name quotes
         If Not TableName.StartsWith("[") And Not TableName.EndsWith("]") Then
             TableName = String.Format("[{0}]", TableName)
@@ -493,11 +514,11 @@ Public Class DbQuery
         Dim SelectSql As String = String.Format("SELECT * FROM {0} WHERE 1 <> 1", TableName)
 
         ' Create the data adapter and the command builder
-        Dim DataAdapter As DbDataAdapter = DbProviderFactories.GetFactory(Me.mConnection).CreateDataAdapter()
+        Dim Adapter As DbDataAdapter = DbProviderFactories.GetFactory(Me.mConnection).CreateDataAdapter()
         Dim CommandBuilder As DbCommandBuilder = DbProviderFactories.GetFactory(Me.mConnection).CreateCommandBuilder()
 
         ' Check for exists
-        If DataAdapter IsNot Nothing And CommandBuilder IsNot Nothing Then
+        If Adapter IsNot Nothing And CommandBuilder IsNot Nothing Then
             ' Set the quotes character
             CommandBuilder.QuotePrefix = DbSqlBuilder.QuotePrefix
             CommandBuilder.QuoteSuffix = DbSqlBuilder.QuoteSuffix
@@ -508,10 +529,25 @@ Public Class DbQuery
             Command.CommandTimeout = Me.mCommandTimeout
             Command.Transaction = Me.mTransaction
 
-            ' Assign the command and update the database
-            DataAdapter.ContinueUpdateOnError = ContinueOnError
-            DataAdapter.SelectCommand = Command
-            DataAdapter.Update(Source)
+            ' Assign the command and return the adapter
+            Adapter.SelectCommand = Command
+            Return Adapter
+
+        Else
+            ' Return nothing
+            Return Nothing
+        End If
+    End Function
+
+    ' Update the database
+    Public Sub UpdateDatabase(ByVal Source As DataTable, ByVal TableName As String,
+                              Optional ByVal ContinueOnError As Boolean = False)
+        ' Create the adapter and check for empty value
+        Dim Adapter As DbDataAdapter = Me.CreateAdapter(TableName)
+        If Adapter IsNot Nothing Then
+            ' Set the adapter and update the table
+            Adapter.ContinueUpdateOnError = ContinueOnError
+            Adapter.Update(Source)
         End If
     End Sub
 
