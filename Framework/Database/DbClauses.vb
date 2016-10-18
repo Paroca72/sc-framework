@@ -25,6 +25,7 @@ Public Class DbClauses
         [Like]
         LikeStart
         LikeEnd
+        WholeDay
     End Enum
 
     ' Single clause
@@ -62,7 +63,7 @@ Public Class DbClauses
 #Region " PUBLIC "
 
     ' Add a clause
-    Public Sub Add(Column As String, Comparer As ComparerType, Value As Object, GroupAsAnd As Boolean)
+    Public Sub Add(Column As String, Comparer As ComparerType, Value As Object, Optional GroupAsAnd As Boolean = True)
         ' Create the single clause
         Dim Clause As SingleClause = New SingleClause()
         Clause.Column = Column
@@ -74,9 +75,15 @@ Public Class DbClauses
         Me.mClauses.Add(Clause)
     End Sub
 
-    ' Add one clause using the default parameters
-    Public Sub Add(Column As String, Value As Object)
-        Me.Add(Column, ComparerType.Equal, Value, True)
+    ' Add a sql
+    Public Sub Add(Sql As String, Optional GroupAsAnd As Boolean = True)
+        ' Create the single clause
+        Dim Clause As SingleClause = New SingleClause()
+        Clause.Sql = Sql
+        Clause.GroupAsAnd = GroupAsAnd
+
+        ' Add to clauses list
+        Me.mClauses.Add(Clause)
     End Sub
 
     ' Add a list of clauses defined as key and value pair
@@ -88,19 +95,8 @@ Public Class DbClauses
         Next
     End Sub
 
-    ' Add a sql
-    Public Sub Add(Sql As String, GroupAsAnd As Boolean)
-        ' Create the single clause
-        Dim Clause As SingleClause = New SingleClause()
-        Clause.Sql = Sql
-        Clause.GroupAsAnd = GroupAsAnd
-
-        ' Add to clauses list
-        Me.mClauses.Add(Clause)
-    End Sub
-
     ' Add a list of clauses
-    Public Sub Add(Clauses() As SCFramework.DbClauses, GroupAsAnd As Boolean)
+    Public Sub Add(Clauses() As SCFramework.DbClauses, Optional GroupAsAnd As Boolean = True)
         ' Cycle all clauses
         For Each CurrentClauses As SCFramework.DbClauses In Clauses
             ' Create the single clause
@@ -121,7 +117,11 @@ Public Class DbClauses
         ' Cycle all clauses
         For Each Clause As SingleClause In Me.mClauses
             ' Check all cases
-            If Clause.Sql IsNot Nothing Then
+            If Clause.Comparer = ComparerType.WholeDay Then
+                ' Whole day
+                ' TODO
+
+            ElseIf Clause.Sql IsNot Nothing Then
                 ' Check if the clause is an object 
                 If Not SCFramework.Utils.String.IsEmptyOrWhite(Filter) Then Filter &= IIf(Clause.GroupAsAnd, " AND ", " OR ")
                 Filter &= "(" & Clause.Sql & ")"

@@ -52,6 +52,10 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Linq.Dynamic, Version=1.0.6132.35681, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\System.Linq.Dynamic.1.0.7\lib\net40\System.Linq.Dynamic.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.XML" />
@@ -69,6 +73,7 @@
     <Import Include="System.Drawing.Imaging" />
     <Import Include="System.Globalization" />
     <Import Include="System.Linq" />
+    <Import Include="System.Linq.Dynamic" />
     <Import Include="System.Net" />
     <Import Include="System.Net.Mail" />
     <Import Include="System.Security" />
@@ -154,6 +159,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <None Include="packages.config" />
     <None Include="Resources\flag_afghanistan.jpg" />
   </ItemGroup>
   <ItemGroup>

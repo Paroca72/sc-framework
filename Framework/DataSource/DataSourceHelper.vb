@@ -190,23 +190,27 @@ Public MustInherit Class DataSourceHelper
 
 #End Region
 
-#Region " PROTECTED "
+#Region " PUBLIC "
 
     ' Set the data table as a source filtered by where clausole
     Public Overridable Function GetSource(Optional Clauses As SCFramework.DbClauses = Nothing,
                                           Optional KeepInMemory As Boolean = False) As DataTable
         ' Check for cache
-        If Me.mDataSource IsNot Nothing And
-            Not Me.ClausesIsChanged(Clauses) Then Return Me.mDataSource
+        If Me.mDataSource IsNot Nothing And Not Me.ClausesIsChanged(Clauses) Then
+            ' Check for clauses null
+            If cla Then
+                Return Me.mDataSource
+            End If
 
-        ' Source
-        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
+            ' Source
+            Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
         Source.CaseSensitive = False
         Source.Locale = CultureInfo.InvariantCulture
 
         ' Data source columns settings
         If Me.PrimaryKeys.Count > 0 Then SCFramework.Utils.DataTable.SetPrimaryKeys(Source, Me.PrimaryKeys.ToArray)
         If Me.AutoNumbers.Count > 0 Then SCFramework.Utils.DataTable.SetAutoIncrements(Source, Me.AutoNumbers.ToArray)
+        If Me.OrderColumns.Count > 0 Then Source = Source.AsEnumerable().OrderBy("", Me.OrderColumns)
 
         ' TODO: all other columns
 

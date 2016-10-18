@@ -13,7 +13,23 @@
 
 
 Public Class Stats
-    Inherits DbHelper
+    Inherits DataSourceHelper
+
+#Region " CONSTRUCTOR "
+
+    Public Sub New()
+        ' Base class
+        MyBase.New()
+
+        ' Keep the table in memory
+        Me.GetSource(Nothing, True)
+
+        ' Define the order fields
+        Me.OrderColumns.Clear()
+        Me.OrderColumns.Add("DAY")
+    End Sub
+
+#End Region
 
 #Region " STATIC "
 
@@ -50,10 +66,6 @@ Public Class Stats
     Private Sub FillDayGaps(Source As DataTable)
         ' Check for empty data
         If Source IsNot Nothing AndAlso Source.Rows.Count > 0 Then
-            ' Sort the table
-            Source.DefaultView.Sort = "[DAY]"
-            Source = Source.DefaultView.ToTable()
-
             ' Get the date limits
             Dim StartDate As Date = Source.Rows(0)!DAY
             Dim EndDate As Date = Source.Rows(Source.Rows.Count - 1)!DAY
@@ -80,10 +92,23 @@ Public Class Stats
         End If
     End Sub
 
+    ' Get source filtered by date
+    Private Function GetFilteredSource([Date] As Date) As DataTable
+        ' Create the clauses
+        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
+        Clauses.Add("DAY", SCFramework.DbClauses.ComparerType.MinorAndEqual, [Date])
+
+        Return Me.GetSource()
+    End Function
+
+#End Region
+
+#Region " PUBLIC "
+
     ' Get the data source
-    Protected Overrides Function GetSource(Clauses As DbSqlBuilder.Clauses) As DataTable
+    Public Shadows Function GetSource(Optional Clauses As SCFramework.DbClauses = Nothing) As DataTable
         ' Get the data source
-        Dim Source As DataTable = MyBase.GetSource(Clauses)
+        Dim Source As DataTable = MyBase.GetSource(Clauses, False)
 
         ' Fix the table
         Me.FillDayGaps(Source)
@@ -98,7 +123,7 @@ Public Class Stats
         Source.Columns.Add("MONTH_NAME", GetType(String))
 
         ' Apply the columns value
-        Dim Culture As Globalization.CultureInfo = Globalization.CultureInfo.CreateSpecificCulture(SCFramework.Languages.Current)
+        Dim Culture As Globalization.CultureInfo = Globalization.CultureInfo.CreateSpecificCulture(SCFramework.Languages.Instance.Current)
         For Each Row As DataRow In Source.Rows
             ' Current day
             Dim Current As Date = CDate(Row!DAY)
@@ -120,38 +145,19 @@ Public Class Stats
         Return Source
     End Function
 
-    ' Get the view by the passed date
-    Private Function GetView(MinDate As Date) As DataView
-        ' Create the clause
-        Dim Clauses As DbSqlBuilder.Clauses = New DbSqlBuilder.Clauses()
-        Clauses.Add("DAY", DbSqlBuilder.Clauses.ComparerType.MajorAndEqual, MinDate, True)
-
-        ' Get the view and sort
-        Dim Source As DataTable = Me.GetSource(Clauses)
-        Dim View As DataView = Source.DefaultView
-        View.Sort = "[DAY]"
-
-        ' Return the view
-        Return View
-    End Function
-
-#End Region
-
-#Region " PUBLIC "
-
     ' Get the last week
-    Public Function GetLastWeek() As DataView
-        Return Me.GetView(Today.AddDays(-7))
+    Public Function GetLastWeek() As DataTable
+        Return Me.GetFilteredSource(Today.AddDays(-7))
     End Function
 
     ' Get the last month
-    Public Function GetLastMonth() As DataView
-        Return Me.GetView(Today.AddMonths(-1))
+    Public Function GetLastMonth() As DataTable
+        Return Me.GetFilteredSource(Today.AddMonths(-1))
     End Function
 
     ' Get the last year
-    Public Function GetLastYear() As DataView
-        Return Me.GetView(Today.AddYears(-1))
+    Public Function GetLastYear() As DataTable
+        Return Me.GetFilteredSource(Today.AddYears(-1))
     End Function
 
     ' Increase the current day access counter
