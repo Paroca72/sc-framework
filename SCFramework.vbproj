@@ -39,14 +39,6 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="HtmlAgilityPack, Version=1.4.6.0, Culture=neutral, PublicKeyToken=bd319b19eaf3b43a, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\Documents\Visual Studio 2013\Refrences\HtmlAgilityPack 1.4.9.5\lib\Net45\HtmlAgilityPack.dll</HintPath>
-    </Reference>
-    <Reference Include="ICSharpCode.SharpZipLib, Version=0.86.0.518, Culture=neutral, PublicKeyToken=1b03e6acf1164f73, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\Documents\Visual Studio 2013\Refrences\SharpZipLib 0.86.0\net-20\ICSharpCode.SharpZipLib.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Data" />
@@ -69,8 +61,6 @@
     <Import Include="System.Configuration" />
     <Import Include="System.Data" />
     <Import Include="System.Diagnostics" />
-    <Import Include="System.Drawing" />
-    <Import Include="System.Drawing.Imaging" />
     <Import Include="System.Globalization" />
     <Import Include="System.Linq" />
     <Import Include="System.Linq.Dynamic" />
@@ -81,10 +71,6 @@
     <Import Include="System.Text" />
     <Import Include="System.Text.RegularExpressions" />
     <Import Include="System.Threading" />
-    <Import Include="System.Web" />
-    <Import Include="System.Web.UI" />
-    <Import Include="System.Web.UI.HtmlControls" />
-    <Import Include="System.Web.UI.WebControls" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controls\Image\Image.vb" />

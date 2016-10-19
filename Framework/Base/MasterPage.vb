@@ -13,14 +13,14 @@
 
 
 Public Class MasterPage
-    Inherits System.Web.UI.MasterPage
+    Inherits Web.UI.MasterPage
 
     Public Shadows Property Page As SCFramework.Page
         Get
             Return MyBase.Page
         End Get
         Set(value As SCFramework.Page)
-            MyBase.Page = CType(value, System.Web.UI.Page)
+            MyBase.Page = CType(value, Web.UI.Page)
         End Set
     End Property
 

@@ -12,8 +12,8 @@
 
 Namespace WebControls
 
-    <ToolboxData("<{0}:Image runat=""server"" />")> _
-    Partial Public Class Image : Inherits Global.System.Web.UI.WebControls.Literal
+    <ToolboxData("<{0}:Image runat=""server"" />")>
+    Partial Public Class Image : Inherits Web.UI.WebControls.Literal
 
 #Region " PUBLIC ENUM "
 

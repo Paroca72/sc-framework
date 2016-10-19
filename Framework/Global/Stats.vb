@@ -7,7 +7,7 @@
 ' Base statistic manager (user access by date)
 ' Version 5.0.0
 ' Created 30/10/2015
-' Updated 30/10/2015
+' Updated 19/10/2016
 '
 '*************************************************************************************************
 
@@ -18,15 +18,15 @@ Public Class Stats
 #Region " CONSTRUCTOR "
 
     Public Sub New()
-        ' Base class
+        ' Base methods
         MyBase.New()
-
-        ' Keep the table in memory
-        Me.GetSource(Nothing, True)
 
         ' Define the order fields
         Me.OrderColumns.Clear()
         Me.OrderColumns.Add("DAY")
+
+        ' Load the table in memory
+        MyBase.GetSource(Nothing, True)
     End Sub
 
 #End Region
@@ -162,26 +162,31 @@ Public Class Stats
 
     ' Increase the current day access counter
     Public Sub IncreaseTodayCounter()
-        ' Get the data source
-        Dim Source As DataTable = Me.GetSource()
+        ' Create the clauses for a single day
+        Dim Clauses As SCFramework.DbClauses = SCFramework.DbClauses.Empty
+        Clauses.Add("YEAR_NUMBER", SCFramework.DbClauses.ComparerType.Equal, Date.Today.Year)
+        Clauses.Add("MONTH_NUMBER", SCFramework.DbClauses.ComparerType.Equal, Date.Today.Month)
+        Clauses.Add("DAY_NUMBER", SCFramework.DbClauses.ComparerType.Equal, Date.Today.Day)
 
-        ' Find the today record
-        Dim Today As DataRow = Source.Rows.Find(Date.Today)
+        ' Get the data source
+        Dim Today As DataRow = Me.GetSource(Clauses).AsEnumerable().FirstOrDefault
 
         ' Check if exists
         If Today IsNot Nothing Then
             ' Increase of one
             Today!COUNTER = CInt(Today!COUNTER) + 1
         Else
-            ' Add new record
-            Today = Source.NewRow
-            Today!DAY = Date.Today
-            Today!COUNTER = 1
-            Source.Rows.Add(Today)
+            ' Create the values list
+            Dim Values As Dictionary(Of String, Object) = New Dictionary(Of String, Object)
+            Values.Add("DAY", Date.Today)
+            Values.Add("COUNTER", 1)
+
+            ' Insert
+            Me.Insert(Values)
         End If
 
         ' Update the database
-        Bridge.Query.UpdateDatabase(Source)
+        Me.AcceptChanges()
     End Sub
 
 #End Region

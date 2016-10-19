@@ -1,16 +1,15 @@
 '*************************************************************************************************
 ' 
 ' [SCFramework]
-' DatabaseBaseTableHelper  
+' Utils  
 ' by Samuele Carassai
 '
-' Helper class to link to database (new from version 5.x)
+' Utilities class
 ' Version 5.0.0
 ' Created 09/10/2016
-' Updated 09/10/2016
+' Updated 19/10/2016
 '
 '*************************************************************************************************
-
 
 
 Namespace Utils

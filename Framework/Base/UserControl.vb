@@ -13,14 +13,14 @@
 
 
 Public Class UserControl
-    Inherits System.Web.UI.UserControl
+    Inherits Web.UI.UserControl
 
     Public Shadows Property Page As SCFramework.Page
         Get
             Return MyBase.Page
         End Get
         Set(value As SCFramework.Page)
-            MyBase.Page = CType(value, System.Web.UI.Page)
+            MyBase.Page = CType(value, Web.UI.Page)
         End Set
     End Property
 

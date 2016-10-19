@@ -7,7 +7,7 @@
 ' Sql builder manager
 ' Version 5.0.0
 ' Created 10/10/2016
-' Updated 16/10/2016
+' Updated 19/10/2016
 '
 '*************************************************************************************************
 
@@ -25,7 +25,6 @@ Public Class DbClauses
         [Like]
         LikeStart
         LikeEnd
-        WholeDay
     End Enum
 
     ' Single clause
@@ -57,6 +56,35 @@ Public Class DbClauses
     Public Sub New(Clauses As IDictionary(Of String, Object))
         Me.Add(Clauses)
     End Sub
+
+#End Region
+
+#Region " STATIC "
+
+    ' Create a false clauses
+    Public Shared Function AlwaysFalse() As SCFramework.DbClauses
+        ' Create the false clauses
+        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
+        Clauses.Add("1 <> 1")
+
+        ' Return the new object
+        Return Clauses
+    End Function
+
+    ' Create a true clauses
+    Public Shared Function AlwaysTrue() As SCFramework.DbClauses
+        ' Create the false clauses
+        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
+        Clauses.Add("1 = 1")
+
+        ' Return the new object
+        Return Clauses
+    End Function
+
+    ' Create an empty clauses
+    Public Shared Function Empty() As SCFramework.DbClauses
+        Return New SCFramework.DbClauses()
+    End Function
 
 #End Region
 
@@ -117,19 +145,13 @@ Public Class DbClauses
         ' Cycle all clauses
         For Each Clause As SingleClause In Me.mClauses
             ' Check all cases
-            If Clause.Comparer = ComparerType.WholeDay Then
-                ' Whole day
-                ' TODO
-
-            ElseIf Clause.Sql IsNot Nothing Then
-                ' Check if the clause is an object 
+            If Clause.Sql IsNot Nothing Or Clause.Clauses IsNot Nothing Then
+                ' Join with the old filter
                 If Not SCFramework.Utils.String.IsEmptyOrWhite(Filter) Then Filter &= IIf(Clause.GroupAsAnd, " AND ", " OR ")
-                Filter &= "(" & Clause.Sql & ")"
 
-            ElseIf Clause.Clauses IsNot Nothing Then
-                ' Check if the clause is an object 
-                If Not SCFramework.Utils.String.IsEmptyOrWhite(Filter) Then Filter &= IIf(Clause.GroupAsAnd, " AND ", " OR ")
-                Filter &= "(" & Clause.Clauses.Builder(ForFilter) & ")"
+                ' Check the case
+                If Clause.Sql IsNot Nothing Then Filter &= "(" & Clause.Sql & ")"
+                If Clause.Clauses IsNot Nothing Then Filter &= "(" & Clause.Clauses.Builder(ForFilter) & ")"
 
             Else
                 ' Fix the particular case

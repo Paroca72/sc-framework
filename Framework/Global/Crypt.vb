@@ -7,12 +7,10 @@
 ' Helper class to manage cryptography
 ' Version 5.0.0
 ' Created --/--/----
-' Updated 02/11/2015
+' Updated 19/10/2016
 '
 '*************************************************************************************************
 
-
-Imports System.Security.Cryptography
 
 ' Class Crypt
 Public Class Crypt
@@ -22,7 +20,7 @@ Public Class Crypt
 
         ' Compite the hash code
         Public Shared Function ComputeHash(ByVal Input As String) As String
-            Dim Md5Hasher As New MD5CryptoServiceProvider()
+            Dim Md5Hasher As New Cryptography.MD5CryptoServiceProvider()
             Dim Data As Byte() = Md5Hasher.ComputeHash(Encoding.ASCII.GetBytes(Input))
 
             Dim sBuilder As New StringBuilder()
@@ -36,19 +34,19 @@ Public Class Crypt
         ' Decrypt a MD5 string
         Public Shared Function Decrypt(ByVal ToOriginal As String, ByVal Key As String) As String
             Try
-                Dim MD5Hash As MD5CryptoServiceProvider = New MD5CryptoServiceProvider()
+                Dim MD5Hash As Cryptography.MD5CryptoServiceProvider = New Cryptography.MD5CryptoServiceProvider()
 
                 Dim sPassKeyArray As Byte() = MD5Hash.ComputeHash(UTF8Encoding.UTF8.GetBytes(Key))
                 Dim sOriginalArray As Byte() = Convert.FromBase64String(ToOriginal)
 
                 MD5Hash.Clear()
 
-                Dim tripleDesCsp As TripleDESCryptoServiceProvider = New TripleDESCryptoServiceProvider()
+                Dim tripleDesCsp As Cryptography.TripleDESCryptoServiceProvider = New Cryptography.TripleDESCryptoServiceProvider()
                 tripleDesCsp.Key = sPassKeyArray
-                tripleDesCsp.Mode = CipherMode.ECB
-                tripleDesCsp.Padding = PaddingMode.PKCS7
+                tripleDesCsp.Mode = Cryptography.CipherMode.ECB
+                tripleDesCsp.Padding = Cryptography.PaddingMode.PKCS7
 
-                Dim cTransform As ICryptoTransform = tripleDesCsp.CreateDecryptor()
+                Dim cTransform As Cryptography.ICryptoTransform = tripleDesCsp.CreateDecryptor()
                 Dim resultArray As Byte() = cTransform.TransformFinalBlock(sOriginalArray, 0, sOriginalArray.Length)
 
                 tripleDesCsp.Clear()
@@ -62,19 +60,19 @@ Public Class Crypt
 
         ' Encrypt a MD5
         Public Shared Function Encrypt(ByVal Original As String, ByVal Key As String) As String
-            Dim MD5Hash As MD5CryptoServiceProvider = New MD5CryptoServiceProvider()
+            Dim MD5Hash As Cryptography.MD5CryptoServiceProvider = New Cryptography.MD5CryptoServiceProvider()
 
             Dim sPassKeyArray As Byte() = MD5Hash.ComputeHash(UTF8Encoding.UTF8.GetBytes(Key))
             Dim sOriginalArray As Byte() = UTF8Encoding.UTF8.GetBytes(Original)
 
             MD5Hash.Clear()
 
-            Dim tripleDesCsp As TripleDESCryptoServiceProvider = New TripleDESCryptoServiceProvider()
+            Dim tripleDesCsp As Cryptography.TripleDESCryptoServiceProvider = New Cryptography.TripleDESCryptoServiceProvider()
             tripleDesCsp.Key = sPassKeyArray
-            tripleDesCsp.Mode = CipherMode.ECB
-            tripleDesCsp.Padding = PaddingMode.PKCS7
+            tripleDesCsp.Mode = Cryptography.CipherMode.ECB
+            tripleDesCsp.Padding = Cryptography.PaddingMode.PKCS7
 
-            Dim cTransform As ICryptoTransform = tripleDesCsp.CreateEncryptor()
+            Dim cTransform As Cryptography.ICryptoTransform = tripleDesCsp.CreateEncryptor()
             Dim resultArray As Byte() = cTransform.TransformFinalBlock(sOriginalArray, 0, sOriginalArray.Length)
 
             tripleDesCsp.Clear()
@@ -98,11 +96,11 @@ Public Class Crypt
     End Function
 
     ' Convert an image to Base64
-    Public Shared Function ToBase64(ByVal Image As System.Drawing.Bitmap, Format As Imaging.ImageFormat) As String
-        Dim Memory As New System.IO.MemoryStream()
+    Public Shared Function ToBase64(ByVal Image As Drawing.Bitmap, Format As Drawing.Imaging.ImageFormat) As String
+        Dim Memory As New IO.MemoryStream()
 
         Image.Save(Memory, Format)
-        Dim Base64 As String = System.Convert.ToBase64String(Memory.ToArray)
+        Dim Base64 As String = Convert.ToBase64String(Memory.ToArray)
 
         Memory.Close()
         Memory = Nothing
@@ -114,7 +112,7 @@ Public Class Crypt
     Public Shared Shadows Function ToString(Base64 As String) As String
         Try
             Dim Bytes() As Byte = Convert.FromBase64String(Base64)
-            Return Global.System.Text.Encoding.ASCII.GetString(Bytes)
+            Return Encoding.ASCII.GetString(Bytes)
 
         Catch ex As Exception
             Return String.Empty
@@ -122,11 +120,11 @@ Public Class Crypt
     End Function
 
     ' Convert a Base64 code to a bitmap
-    Public Shared Function ToBitmap(Base64 As String) As System.Drawing.Bitmap
+    Public Shared Function ToBitmap(Base64 As String) As Drawing.Bitmap
         Try
             Dim Bytes() As Byte = Convert.FromBase64String(Base64)
-            Dim Memory As System.IO.MemoryStream = New System.IO.MemoryStream(Bytes)
-            Return New Bitmap(Memory)
+            Dim Memory As IO.MemoryStream = New IO.MemoryStream(Bytes)
+            Return New Drawing.Bitmap(Memory)
 
         Catch ex As Exception
             Return Nothing
@@ -134,12 +132,12 @@ Public Class Crypt
     End Function
 
     ' Create a random unique key of the passed length
-    Public Shared Function GetUniqueKey(KeyLength As Integer) As String
+    Public Shared Function CreateUniqueKey(KeyLength As Integer) As String
         Dim a As String = "ABCDEFGHJKLMNOPQRSTUVWXYZ234567890"
         Dim chars() As Char = New Char((a.Length) - 1) {}
         chars = a.ToCharArray
         Dim data() As Byte = New Byte((KeyLength) - 1) {}
-        Dim crypto As RNGCryptoServiceProvider = New RNGCryptoServiceProvider
+        Dim crypto As Cryptography.RNGCryptoServiceProvider = New Cryptography.RNGCryptoServiceProvider()
         crypto.GetNonZeroBytes(data)
         Dim result As StringBuilder = New StringBuilder(KeyLength)
         For Each b As Byte In data

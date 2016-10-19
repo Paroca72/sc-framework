@@ -25,7 +25,7 @@
 
 
 Public Class Page
-    Inherits System.Web.UI.Page
+    Inherits Web.UI.Page
 
 #Region " PRIVATES "
 
@@ -55,7 +55,7 @@ Public Class Page
     End Sub
 
     Private Sub AddLanguageMeta()
-        Dim Meta As HtmlMeta = New HtmlMeta()
+        Dim Meta As Web.UI.HtmlControls.HtmlMeta = New Web.UI.HtmlControls.HtmlMeta()
         Meta.HttpEquiv = "content-language"
         Meta.Content = System.Threading.Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName
 
@@ -116,19 +116,19 @@ Public Class Page
 
 #Region " INITIALIZE "
 
-    Private Sub Page_Load(ByVal sender As Object, ByVal e As Global.System.EventArgs) Handles MyBase.Load
+    Private Sub Page_Load(ByVal sender As Object, ByVal e As EventArgs) Handles MyBase.Load
         ' Ever
         Me.AddLanguageMeta()
 
         ' Analyze
         If IsPostBack Then
-            Dim Target As String = Request.Form(UI.Page.postEventSourceID)
-            Dim Argument As String = Request.Form(UI.Page.postEventArgumentID)
+            Dim Target As String = Request.Form(Web.UI.Page.postEventSourceID)
+            Dim Argument As String = Request.Form(Web.UI.Page.postEventArgumentID)
             AnalizePostBack(Target, Argument)
         End If
     End Sub
 
-    Private Sub Page_PreRender(sender As Object, e As System.EventArgs) Handles Me.PreRender
+    Private Sub Page_PreRender(sender As Object, e As EventArgs) Handles Me.PreRender
     End Sub
 
 #End Region
@@ -225,7 +225,7 @@ Public Class Page
     End Sub
 
     Public Sub ShowJavaMessage(ByVal Message As String)
-        SCFramework.HTML.ShowJavaMessage(Message, Me)
+        ' TODO
     End Sub
 
 #End Region

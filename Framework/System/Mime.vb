@@ -1,47 +1,31 @@
 ﻿'*************************************************************************************************
 ' 
 ' [SCFramework]
-' ManageFiles
+' Mime
 ' di Samuele Carassai
 '
 ' Class for manage the mime type (new from the version 5.x)
-' Versione 5.0.0
+' Version 5.0.0
+' Created --/--/----
+' Updated 19/10/2016
 '
 '*************************************************************************************************
 
+
 Public Class Mime
 
-    '----------------------------------------------------------------------------------
-    ' STATIC PRIVATE METHODS
+#Region " PRIVATE "
 
     ' Mime type structure holder
-    Private Shared TypeList As List(Of KeyValuePair(Of String, String))
+    Private Shared mTypeList As List(Of KeyValuePair(Of String, String))
 
     ' Create the mime type structure
-    Private Shared Function CreateTheMimeListStructure() As List(Of KeyValuePair(Of String, String))
+    Private Shared Function CreateMimeListStructure() As List(Of KeyValuePair(Of String, String))
         Try
-            ' Define the structure holder
-            Dim [Structure] As List(Of KeyValuePair(Of String, String)) = New List(Of KeyValuePair(Of String, String))
-            ' Get the mime file references
-            Dim Text As String = My.Resources.mime
-            ' Split in all rows
-            Dim Rows() As String = Text.Split(vbCrLf)
-
-            ' Cycle all rows
-            For Each Row As String In Rows
-                ' Get the key value pair
-                Dim Key As String = Row.Split(vbTab)(0)
-                Dim Value As String = Row.Split(vbTab)(1)
-
-                ' Check the pair
-                If Not String.IsNullOrEmpty(Key) And Not String.IsNullOrEmpty(Value) Then
-                    ' Save the pair
-                    [Structure].Add(New KeyValuePair(Of String, String)(Key.Trim, Value.Trim))
-                End If
-            Next
-
-            ' Return
-            Return [Structure]
+            Return (From Row As String In My.Resources.mime.Split(vbCrLf)
+                    Where Row.Contains(vbTab)
+                    Let Key As String = Row.Split(vbTab)(0).Trim, Value As String = Row.Split(vbTab)(1).Trim
+                    Select New KeyValuePair(Of String, String)(Key, Value)).ToList
 
         Catch ex As Exception
             Return Nothing
@@ -49,64 +33,64 @@ Public Class Mime
     End Function
 
     ' Get the mime type structure
-    Private Shared Function GetTheMimeTypeStructure() As List(Of KeyValuePair(Of String, String))
+    Private Shared Function GetMimeTypeStructure() As List(Of KeyValuePair(Of String, String))
         ' Check if the structure is already create
-        If Mime.TypeList Is Nothing Then
+        If Mime.mTypeList Is Nothing Then
             ' Create the structure
-            Mime.TypeList = Mime.CreateTheMimeListStructure()
+            Mime.mTypeList = Mime.CreateMimeListStructure()
         End If
         ' Return the structure
-        Return Mime.TypeList
+        Return Mime.mTypeList
     End Function
 
+#End Region
 
-    '----------------------------------------------------------------------------------
-    ' STATIC PUBLIC METHODS
+#Region " PUBLIC "
 
     ' Get the mime type by file extension
-    Public Shared Function GetMimeByFileExtension(Extension As String) As String
-        ' Fix the extension
-        If Not Extension.StartsWith(".") Then
-            Extension = "." & Extension
-        End If
+    Public Shared Function GetMimeType(Extension As String) As String
+        Try
+            ' Fix the extension and check for empty values
+            If Not Extension.StartsWith(".") And
+            Mime.GetMimeTypeStructure() IsNot Nothing Then Extension = "." & Extension
 
-        ' Cycle the mime structure
-        For Each Pair As KeyValuePair(Of String, String) In Mime.TypeList
-            ' Check the pair
-            If Pair.Key.Equals(Extension) Then
-                ' If equal return the value
-                Return Pair.Value
-            End If
-        Next
-        ' If not found
-        Return Nothing
+            ' Searching for the pair value
+            Return (From Pair As KeyValuePair(Of String, String) In Mime.GetMimeTypeStructure()
+                    Where Pair.Key.Equals(Extension) Select Pair.Value).FirstOrDefault
+
+        Catch ex As Exception
+            ' In error case return nothing
+            Return Nothing
+        End Try
+    End Function
+
+    ' Get the mime type from a image object
+    Public Shared Function GetMimeType(ByVal [Image] As Drawing.Image) As String
+        ' Get the mime and return it
+        Dim Mime As String = (From Codec In Drawing.Imaging.ImageCodecInfo.GetImageDecoders()
+                              Where Codec.FormatID = [Image].RawFormat.Guid
+                              Select Codec.MimeType).FirstOrDefault
+        Return IIf(Mime Is Nothing, "image/unknown", Mime)
     End Function
 
     ' Get the mime type by file extension
-    Public Shared Function GetFileExtensionByMime(MimeType As String, Optional RemoveDot As Boolean = False) As String
-        ' Cycle the mime structure
-        For Each Pair As KeyValuePair(Of String, String) In Mime.TypeList
-            ' Check the pair
-            If Pair.Value.Equals(MimeType) Then
-                ' Checking for remove dot
-                If RemoveDot Then
-                    ' RemoveDot 
-                    Return Pair.Key.Remove(0, 1)
-                Else
-                    Return Pair.Key
-                End If
-            End If
-        Next
-        ' If not found
-        Return Nothing
+    Public Shared Function GetFileExtension(MimeType As String) As String
+        Try
+            ' Searching for the pair value
+            Return (From Pair As KeyValuePair(Of String, String) In Mime.GetMimeTypeStructure()
+                    Where Pair.Value.Equals(MimeType) Select Pair.Value).FirstOrDefault
+
+        Catch ex As Exception
+            ' In error case return nothing
+            Return Nothing
+        End Try
     End Function
 
     ' Get the mime representing bitmap
-    Public Shared Function GetRepresentingBitmap(MimeType As String) As Bitmap
+    Public Shared Function GetRepresentingBitmap(MimeType As String) As Drawing.Bitmap
         Try
-            ' Build the resource name
-            Dim ResourceName As String = String.Format("filetype_{0}", Mime.GetFileExtensionByMime(MimeType))
-            ' Get the image by manager
+            ' Build the resource name and get the image by the resources manager
+            Dim ResourceName As String = String.Format("filetype_{0}", Mime.GetFileExtension(MimeType))
             Return My.Resources.ResourceManager.GetObject(ResourceName)
 
         Catch ex As Exception
@@ -114,5 +98,26 @@ Public Class Mime
             Return Nothing
         End Try
     End Function
+
+    ' Get knowned image Format from the mime type
+    Public Shared Function GetFormat(MimeType As String) As Drawing.Imaging.ImageFormat
+        ' Select by case
+        Select Case MimeType
+            Case "image/bmp" : Return Drawing.Imaging.ImageFormat.Bmp
+            Case "image/emf" : Return Drawing.Imaging.ImageFormat.Emf
+            Case "image/exif" : Return Drawing.Imaging.ImageFormat.Exif
+            Case "image/gif" : Return Drawing.Imaging.ImageFormat.Gif
+            Case "image/icon" : Return Drawing.Imaging.ImageFormat.Icon
+            Case "image/jpeg" : Return Drawing.Imaging.ImageFormat.Jpeg
+            Case "image/membmp" : Return Drawing.Imaging.ImageFormat.MemoryBmp
+            Case "image/png" : Return Drawing.Imaging.ImageFormat.Png
+            Case "image/tiff" : Return Drawing.Imaging.ImageFormat.Tiff
+            Case "image/wmf" : Return Drawing.Imaging.ImageFormat.Wmf
+        End Select
+        ' Else return nothing
+        Return Nothing
+    End Function
+
+#End Region
 
 End Class

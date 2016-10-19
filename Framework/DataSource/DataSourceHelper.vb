@@ -7,7 +7,7 @@
 ' Data source helper
 ' Version 5.0.0
 ' Created 10/10/2016
-' Updated 18/10/2016
+' Updated 19/10/2016
 '
 '*************************************************************************************************
 
@@ -195,24 +195,33 @@ Public MustInherit Class DataSourceHelper
     ' Set the data table as a source filtered by where clausole
     Public Overridable Function GetSource(Optional Clauses As SCFramework.DbClauses = Nothing,
                                           Optional KeepInMemory As Boolean = False) As DataTable
-        ' Check for cache
-        If Me.mDataSource IsNot Nothing And Not Me.ClausesIsChanged(Clauses) Then
-            ' Check for clauses null
-            If cla Then
-                Return Me.mDataSource
+        ' Hold the source
+        Dim Source As DataTable = Me.mDataSource
+
+        ' Check if hove something held in memory
+        If Source IsNot Nothing Then
+            ' If the cluases not changed return the keep in memory source
+            If Not Me.ClausesIsChanged(Clauses) Then
+                Return Source
+
+            Else
+                ' Filter the source with the new clauses
+                Source = Source.AsEnumerable().Select(Clauses.ForFilter)
             End If
 
-            ' Source
-            Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
-        Source.CaseSensitive = False
-        Source.Locale = CultureInfo.InvariantCulture
+        Else
+            ' I must create a new datasource with the proper columns settings
+            Source = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
+            Source.CaseSensitive = False
+            Source.Locale = CultureInfo.InvariantCulture
 
-        ' Data source columns settings
-        If Me.PrimaryKeys.Count > 0 Then SCFramework.Utils.DataTable.SetPrimaryKeys(Source, Me.PrimaryKeys.ToArray)
-        If Me.AutoNumbers.Count > 0 Then SCFramework.Utils.DataTable.SetAutoIncrements(Source, Me.AutoNumbers.ToArray)
-        If Me.OrderColumns.Count > 0 Then Source = Source.AsEnumerable().OrderBy("", Me.OrderColumns)
+            ' Data source columns settings
+            If Me.PrimaryKeys.Count > 0 Then SCFramework.Utils.DataTable.SetPrimaryKeys(Source, Me.PrimaryKeys.ToArray)
+            If Me.AutoNumbers.Count > 0 Then SCFramework.Utils.DataTable.SetAutoIncrements(Source, Me.AutoNumbers.ToArray)
+            If Me.OrderColumns.Count > 0 Then Source = Source.AsEnumerable().OrderBy("", Me.OrderColumns)
 
-        ' TODO: all other columns
+            ' TODO: all other columns
+        End If
 
         ' Hold the status is needed 
         If KeepInMemory Then
@@ -221,7 +230,7 @@ Public MustInherit Class DataSourceHelper
         End If
 
         ' Return
-        Return Me.mDataSource
+        Return Source
     End Function
 
     ' Delete command
@@ -271,12 +280,10 @@ Public MustInherit Class DataSourceHelper
 
     ' Insert command
     Public Overrides Function Insert(Values As IDictionary(Of String, Object)) As Long
-        ' Create a false clause for give back an empty table
-        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
-        Clauses.Add("1 <> 1", False)
-
         ' Get the filtered table and check for empty values
-        Dim Source As DataTable = IIf(Me.IsMemoryManaged, Me.mDataSource, Me.GetSource(Clauses))
+        Dim Source As DataTable = IIf(Me.IsMemoryManaged,
+                                      Me.mDataSource,
+                                      Me.GetSource(SCFramework.DbClauses.AlwaysFalse))
         If Source Is Nothing Then Return 0
 
         ' Create the new row
@@ -357,10 +364,6 @@ Public MustInherit Class DataSourceHelper
             Throw ex
         End Try
     End Function
-
-#End Region
-
-#Region " PUBLIC "
 
     ' Fix the changes on the database using the data source held in memory
     Public Overridable Function AcceptChanges() As Boolean
