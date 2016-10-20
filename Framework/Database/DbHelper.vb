@@ -116,16 +116,17 @@ Public MustInherit Class DbHelper
 
     ' Convert a single value in a pair value using the primary key as pair key
     Protected Function ToClauses(Value As Long) As SCFramework.DbClauses
-        ' Define the where filter
-        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
-
         ' Check if have at least one primary key
         If Me.mPrimaryKeysColumns.Count > 0 Then
+            ' Define the clases
+            Dim Clauses As SCFramework.DbClauses = SCFramework.DbClauses.Empty
             Clauses.Add(Me.mPrimaryKeysColumns(0), Value)
-        End If
+            Return Clauses
 
-        ' Return
-        Return Clauses
+        Else
+            ' Else return
+            Return Nothing
+        End If
     End Function
 
 #End Region

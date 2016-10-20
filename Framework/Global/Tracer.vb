@@ -7,12 +7,12 @@
 ' Trace the user access/action
 ' Version 5.0.0
 ' Created 14/10/2016
-' Updated 15/10/2016
+' Updated 20/10/2016
 '
 '*************************************************************************************************
 
 
-Public Class LogTracer
+Public Class Tracer
     Inherits SCFramework.DataSourceHelper
 
 #Region " MUST OVERRIDES "
@@ -37,7 +37,7 @@ Public Class LogTracer
         ' Define the field values
         Dim Values As Dictionary(Of String, Object) = New Dictionary(Of String, Object)()
         Values.Add("DATE", Date.Now)
-        Values.Add("TYPE", LogTracer.Actions.Login)
+        Values.Add("TYPE", Tracer.Actions.Login)
         Values.Add("SUCCESS", Success)
         Values.Add("ALIAS", [Alias])
         Values.Add("PASSWORD", Password)
@@ -57,8 +57,8 @@ Public Class LogTracer
     End Function
 
     ' Delete the trace log filtered by the type.
-    Public Overloads Function Delete(Filter As LogTracer.Actions) As Long
-        Return Me.Delete(New SCFramework.DbClauses("TYPE", Filter))
+    Public Overloads Function Delete(ActionFilter As Tracer.Actions) As Long
+        Return Me.Delete(New SCFramework.DbClauses("TYPE", ActionFilter))
     End Function
 
 #End Region

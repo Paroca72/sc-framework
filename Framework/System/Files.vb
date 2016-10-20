@@ -15,6 +15,14 @@
 Public Class Files
     Inherits DataSourceHelper
 
+    ' The expire period (hours)
+    Private Const DELETE_TEMPORARY_FILES_AFTER = 4
+
+    ' Define a static thread and his timer
+    Private Shared CleanThread As Thread = Nothing
+    Private CleanDelay As TimeSpan = New TimeSpan(0, 15, 0)
+
+
 #Region " CONSTRUCTOR "
 
     Public Sub New()
@@ -65,7 +73,7 @@ Public Class Files
         ' Check for empty values
         If Not SCFramework.Utils.String.IsEmptyOrWhite(Path) Then
             ' Get the file phisical path
-            Path = System.Web.Hosting.HostingEnvironment.MapPath(Path)
+            Path = Web.Hosting.HostingEnvironment.MapPath(Path)
             ' Check if file exists
             If IO.File.Exists(Path) Then
                 ' Delete 
@@ -98,7 +106,7 @@ Public Class Files
         End If
 
         ' Check if file exists
-        Dim PhisicalPath As String = System.Web.Hosting.HostingEnvironment.MapPath(Path)
+        Dim PhisicalPath As String = Web.Hosting.HostingEnvironment.MapPath(Path)
         If Not IO.File.Exists(Path) Then
             Throw New Exception("File not exists.")
         End If
@@ -108,19 +116,12 @@ Public Class Files
 
 #Region " CLEANER "
 
-    ' The expire period (hours)
-    Private Const DELETE_TEMPORARY_FILES_AFTER = 4
-
-    ' Define a static thread and his timer
-    Private Shared CleanThread As Thread = Nothing
-    Private CleanDelay As TimeSpan = New TimeSpan(0, 15, 0)
-
     ' Clean temporary files
     Private Sub CleanTemporaryFiles()
         ' Create the clause
         Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
         Clauses.Add("INSERT_DATE",
-                    SCFramework.DbClauses.ComparerType.MinorAndEqual,
+                    SCFramework.DbClauses.ComparerType.MinorOrEqual,
                     Date.Now.AddHours(-SCFramework.Files.DELETE_TEMPORARY_FILES_AFTER),
                     True)
 
@@ -136,7 +137,7 @@ Public Class Files
     ' Create the thread procedure
     Private Sub ThreadProc()
         ' Check the status
-        While Files.CleanThread.ThreadState <> Global.System.Threading.ThreadState.Stopped
+        While Files.CleanThread.ThreadState <> Threading.ThreadState.Stopped
             Try
                 ' Clean the temporary files
                 Me.CleanTemporaryFiles()
@@ -145,7 +146,8 @@ Public Class Files
                 Thread.ResetAbort()
 
             Catch ex As Exception
-                ' TODO: Write the error inside a log
+                ' Write the log
+                SCFramework.Configuration.Instance.SystemLogs.Write(ex.Message)
 
             Finally
                 ' Sleep
@@ -240,6 +242,36 @@ Public Class Files
         ' Call the base method
         Return MyBase.AcceptChanges(Query)
     End Function
+
+    ' Add column language to the table
+    Public Sub AddLanguageColumn(LanguageCode As String, Optional Query As SCFramework.DbQuery = Nothing)
+        ' Check if the column already exists
+        If Not SCFramework.Utils.String.IsEmptyOrWhite(LanguageCode) And
+            Not Me.WritableColumns.Contains(LanguageCode) Then
+            ' Check for the query manager object
+            If Query Is Nothing Then Query = Me.Query
+
+            ' Alter the table and add to the writable columns
+            Query.Exec(String.Format("ALTER TABLE [{0}] ADD [{1}] NTEXT", Me.GetTableName(), LanguageCode))
+            Me.WritableColumns.Add(LanguageCode)
+            ' TODO: reload the datasource
+        End If
+    End Sub
+
+    ' Add column language to the table
+    Public Sub DropLanguageColumn(LanguageCode As String, Optional Query As SCFramework.DbQuery = Nothing)
+        ' Check if the column exists
+        If Not SCFramework.Utils.String.IsEmptyOrWhite(LanguageCode) And
+            Me.WritableColumns.Contains(LanguageCode) Then
+            ' Check for the query manager object
+            If Query Is Nothing Then Query = Me.Query
+
+            ' Alter the table and add to the writable columns
+            Query.Exec(String.Format("ALTER TABLE [{0}] DROP COLUMN [{1}]", Me.GetTableName(), LanguageCode))
+            Me.WritableColumns.Remove(LanguageCode)
+            ' TODO: reload the datasource
+        End If
+    End Sub
 
 #End Region
 

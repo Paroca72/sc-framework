@@ -14,23 +14,36 @@
 
 Public Class LogFile
 
+    ' Constants
+    Private Const DEFAULT_MAXLINES As Integer = 512
+
     ' Define the internat variables
     Private mFilePath As String = Nothing
-    Private mContent As List(Of String) = Nothing
+    Private mFileLocker As Object = Nothing
 
-    Private mRaiseException As Boolean = True
-    Private mMaxLines As Integer = 512
+    Private mContent As List(Of String) = Nothing
+    Private mHasChanges As Boolean = False
+    Private mMaxLines As Integer = LogFile.DEFAULT_MAXLINES
+
+    Private WriterThread As Thread = Nothing
+    Private WriterDelay As TimeSpan = New TimeSpan(0, 0, 1)
 
 
     ' Constructor
     Sub New(ByVal FilePath As String)
-        ' Store values
+        ' Init 
         Me.mFilePath = FilePath
-        ' Init the content collection
+        Me.mFileLocker = New Object()
         Me.mContent = New List(Of String)
 
         ' Read the content
         Me.Read()
+        Me.CheckLinesLimit()
+
+        ' Create the thread and start it with low priority
+        Me.WriterThread = New Thread(AddressOf Me.ThreadProc)
+        Me.WriterThread.Priority = ThreadPriority.BelowNormal
+        Me.WriterThread.Start()
     End Sub
 
 
@@ -43,26 +56,48 @@ Public Class LogFile
         If Me.mContent IsNot Nothing AndAlso Me.mContent.Count > Me.mMaxLines Then
             ' Delete the last lines that exceed the max
             Me.mContent.RemoveRange(Me.MaxLines, Me.mContent.Count - Me.MaxLines)
+            Me.mHasChanges = True
         End If
     End Sub
 
     ' Read the log content
     Private Sub Read()
         Try
-            ' Reset the content
+            ' Reset and read the content
             Me.mContent.Clear()
-            ' Read the file content
             Me.mContent.AddRange(IO.File.ReadAllLines(Me.mFilePath))
 
-            ' Check the limits
-            Me.CheckLinesLimit()
-
         Catch ex As Exception
-            ' Check if must raise an exception
-            If Me.mRaiseException Then
-                Throw ex
-            End If
+            ' Do nothing
         End Try
+    End Sub
+
+    ' Create the thread procedure
+    Private Sub ThreadProc()
+        ' Check the status
+        While Me.WriterThread.ThreadState <> Threading.ThreadState.Stopped
+            Try
+                ' Write the pending changes
+                If Me.mHasChanges Then
+                    SyncLock Me.mFileLocker
+                        ' Write on file and reset the trigger
+                        IO.File.WriteAllLines(Me.mFilePath, Me.mContent)
+                        Me.mHasChanges = False
+                    End SyncLock
+                End If
+
+            Catch ex As ThreadAbortException
+                Thread.ResetAbort()
+
+            Catch ex As Exception
+                ' Do nothing
+
+            Finally
+                ' Sleep
+                Thread.Sleep(Me.WriterDelay)
+
+            End Try
+        End While
     End Sub
 
 #End Region
@@ -70,38 +105,31 @@ Public Class LogFile
 #Region " PUBLIC "
 
     ' Append a new formatted message to the file
+    Public Sub Write(Prefix As String, Message As String)
+        ' Adjust the prefix
+        If Prefix IsNot Nothing Then
+            Prefix = Date.Now.ToString("D", CultureInfo.InvariantCulture)
+        Else
+            Prefix = String.Format("[{0}][{1}]", Date.Now.ToString("D", CultureInfo.InvariantCulture), Prefix)
+        End If
+
+        ' Format the message and append to the first position of content collection
+        Dim Formatted As String = String.Format("{0} -> {1}", Prefix, Message)
+        Me.mContent.Insert(0, Formatted)
+
+        ' Check the limits
+        Me.CheckLinesLimit()
+        Me.mHasChanges = True
+    End Sub
+
     Public Sub Write(Message As String)
-        Try
-            ' Format the message and append to the first position of content collection
-            Dim Formatted As String = String.Format("{0} -> {1}", Date.Now.ToString("D"), Message)
-            Me.mContent.Insert(0, Formatted)
-
-            ' Check the limits
-            Me.CheckLinesLimit()
-
-            ' Write on file
-            IO.File.WriteAllLines(Me.mFilePath, Me.mContent)
-
-        Catch ex As Exception
-            ' Check if must raise an exception
-            If Me.mRaiseException Then
-                Throw ex
-            End If
-        End Try
+        Me.Write(Nothing, Message)
     End Sub
 
     ' Clear the log file content
     Public Sub Clear()
-        Try
-            ' Write on file an empty content
-            IO.File.WriteAllText(Me.mFilePath, String.Empty)
-
-        Catch ex As Exception
-            ' Check if must raise an exception
-            If Me.mRaiseException Then
-                Throw ex
-            End If
-        End Try
+        Me.mContent.Clear()
+        Me.mHasChanges = True
     End Sub
 
 #End Region
@@ -122,16 +150,6 @@ Public Class LogFile
         End Get
     End Property
 
-    ' Determine if in error case raise an exception
-    Public Property RaiseException() As Boolean
-        Get
-            Return Me.mRaiseException
-        End Get
-        Set(ByVal Value As Boolean)
-            Me.mRaiseException = Value
-        End Set
-    End Property
-
     ' The max lines number limit
     Public Property MaxLines() As Integer
         Get
@@ -143,6 +161,13 @@ Public Class LogFile
             End If
             Me.mMaxLines = Value
         End Set
+    End Property
+
+    ' Get the file path
+    Public ReadOnly Property FilePath As String
+        Get
+            Return Me.mFilePath
+        End Get
     End Property
 
 #End Region

@@ -87,10 +87,9 @@
     </Compile>
     <Compile Include="Framework\Database\DbHelperExtended.vb" />
     <Compile Include="Framework\Database\DbSqlBuilder.vb" />
-    <Compile Include="Framework\Global\LogTracer.vb" />
+    <Compile Include="Framework\Global\Tracer.vb" />
     <Compile Include="Framework\Global\Stats.vb" />
     <Compile Include="Framework\System\Bridge.vb" />
-    <Compile Include="Framework\System\Cache.vb" />
     <Compile Include="Framework\DataSource\DataSourceHelper.vb" />
     <Compile Include="Framework\System\Files.vb" />
     <Compile Include="Framework\System\Languages.vb" />

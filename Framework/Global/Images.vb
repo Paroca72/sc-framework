@@ -13,8 +13,6 @@
 
 
 Public Class Images
-    ' Qualità JPG
-    Private Const JpgQuality As Integer = 90
 
     ' Enum
     Public Enum QualityType

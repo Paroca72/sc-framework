@@ -4,10 +4,14 @@
 ' Stats
 ' by Samuele Carassai
 '
-' Base statistic manager (user access by date)
+' Base statistic manager.
+' This classes inherits from DataSourceHelper but is ALWAYS memory managed. Some base methods are 
+' shadowed or overridden to avoid to change the management way.
+' Offer a very basic function and was created only for give the basis for a future improvement.
+' 
 ' Version 5.0.0
 ' Created 30/10/2015
-' Updated 19/10/2016
+' Updated 20/10/2016
 '
 '*************************************************************************************************
 
@@ -96,7 +100,7 @@ Public Class Stats
     Private Function GetFilteredSource([Date] As Date) As DataTable
         ' Create the clauses
         Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
-        Clauses.Add("DAY", SCFramework.DbClauses.ComparerType.MinorAndEqual, [Date])
+        Clauses.Add("DAY", SCFramework.DbClauses.ComparerType.MinorOrEqual, [Date])
 
         Return Me.GetSource()
     End Function
@@ -161,32 +165,39 @@ Public Class Stats
     End Function
 
     ' Increase the current day access counter
-    Public Sub IncreaseTodayCounter()
+    Public Sub IncreaseCounter(Optional Day As Date = Nothing)
+        ' Check for empty date
+        If Day = Date.MinValue Then Day = Date.Today
+
         ' Create the clauses for a single day
         Dim Clauses As SCFramework.DbClauses = SCFramework.DbClauses.Empty
-        Clauses.Add("YEAR_NUMBER", SCFramework.DbClauses.ComparerType.Equal, Date.Today.Year)
-        Clauses.Add("MONTH_NUMBER", SCFramework.DbClauses.ComparerType.Equal, Date.Today.Month)
-        Clauses.Add("DAY_NUMBER", SCFramework.DbClauses.ComparerType.Equal, Date.Today.Day)
+        Clauses.Add("YEAR_NUMBER", SCFramework.DbClauses.ComparerType.Equal, Day.Year)
+        Clauses.Add("MONTH_NUMBER", SCFramework.DbClauses.ComparerType.Equal, Day.Month)
+        Clauses.Add("DAY_NUMBER", SCFramework.DbClauses.ComparerType.Equal, Day.Day)
 
-        ' Get the data source
+        ' Get the data source and check if exists
         Dim Today As DataRow = Me.GetSource(Clauses).AsEnumerable().FirstOrDefault
-
-        ' Check if exists
         If Today IsNot Nothing Then
-            ' Increase of one
+            ' If exists increase of one
             Today!COUNTER = CInt(Today!COUNTER) + 1
+
         Else
-            ' Create the values list
+            ' If not exists create the values list
             Dim Values As Dictionary(Of String, Object) = New Dictionary(Of String, Object)
-            Values.Add("DAY", Date.Today)
+            Values.Add("DAY", Day)
             Values.Add("COUNTER", 1)
 
-            ' Insert
+            ' Insert the new record
             Me.Insert(Values)
         End If
 
-        ' Update the database
+        ' Is memory managed so I must to update the database manually
         Me.AcceptChanges()
+    End Sub
+
+    ' Force to reload data source using the last clauses at the next source access
+    Public Overrides Sub CleanDataSouce()
+        MyBase.GetSource(Nothing, True)
     End Sub
 
 #End Region

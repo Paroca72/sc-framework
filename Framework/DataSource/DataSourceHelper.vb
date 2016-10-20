@@ -408,8 +408,8 @@ Public MustInherit Class DataSourceHelper
         Me.mDataSource.RejectChanges()
     End Sub
 
-    ' Force to reload data source using the last cluases at the next source access
-    Public Sub CleanDataSouce()
+    ' Force to reload data source using the last clauses at the next source access
+    Public Overridable Sub CleanDataSouce()
         Me.mDataSource = Nothing
     End Sub
 

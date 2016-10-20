@@ -4,10 +4,17 @@
 ' Languages
 ' di Samuele Carassai
 '
-' Classe di gestione lingue
+' Languages manager provide the methods to manage the framework languages.
+' This classes inherits from DataSourceHelper but is ALWAYS memory managed. Some base methods are 
+' shadowed or overridden to avoid to change the management way.
+'
+' As strictly connected to other classes, changes will reflected on:
+'   + <SCFramework.Files> manager class and the related database table.
+'   + <SCFramework.Translations> manager class and the related database table.
+'
 ' Version 5.0.0
 ' Created --/--/----
-' Updated 11/10/2016
+' Updated 20/10/2016
 '
 '*************************************************************************************************
 
@@ -19,6 +26,19 @@ Public Class Languages
     Public Const QUERYSTRING_TAG As String = "Language"
 
 
+#Region " CONSTRUCTOR "
+
+    Sub New()
+        ' Define the order columns
+        Me.OrderColumns.Add("[ISDEFAULT] DESC")
+        Me.OrderColumns.Add("[TITLE]")
+
+        ' Get the source and keep it in memory
+        MyBase.GetSource(Nothing, True)
+    End Sub
+
+#End Region
+
 #Region " STATIC "
 
     ' Static instance holder
@@ -29,6 +49,7 @@ Public Class Languages
         Get
             ' Check if null
             If Languages.mInstance Is Nothing Then
+                ' Create the structure and keep it in memory
                 Languages.mInstance = New Languages()
             End If
 
@@ -54,7 +75,7 @@ Public Class Languages
         ' Lock the data source
         SyncLock Me.DataSourceLocker
             ' Find the row
-            Dim Row = (From CurrentRow As DataRow In Me.Source.AsEnumerable()
+            Dim Row = (From CurrentRow As DataRow In Me.GetSource().AsEnumerable()
                        Where CurrentRow!ISDEFAULT = True And Not IsDBNull(CurrentRow!CODE)
                        Select CurrentRow).FirstOrDefault()
 
@@ -74,7 +95,7 @@ Public Class Languages
             If Not Me.Exists(Code) Then Exit Sub
 
             ' Cycle all languages rows and fix the default
-            For Each Row As DataRow In Me.Source.Rows
+            For Each Row As DataRow In Me.GetSource().Rows
                 ' Check if default
                 Row!ISDEFAULT = Not IsDBNull(Row!CODE) AndAlso CStr(Code).ToLower = Code.ToLower
             Next
@@ -107,17 +128,24 @@ Public Class Languages
 
     ' Check if the code exists in my database
     Public Function Exists(Code As String) As Boolean
-        ' Return true if the code exists in the data source
-        Return (From Row As DataRow In Me.Source.AsEnumerable
-                Where Not IsDBNull(Row!CODE) AndAlso CStr(Code).ToLower = Code.ToLower
-                Select Row) _
+        ' Lock the data source
+        SyncLock Me.DataSourceLocker
+            ' Return true if the code exists in the data source
+            Return (From Row As DataRow In Me.GetSource().AsEnumerable
+                    Where Not IsDBNull(Row!CODE) AndAlso CStr(Code).ToLower = Code.ToLower
+                    Select Row) _
             .FirstOrDefault Is Nothing
+        End SyncLock
     End Function
 
     ' Get all languages code
     Public ReadOnly Property AllCodes() As String()
         Get
-            Return (From Row As DataRow In Me.Source.AsEnumerable Select Row!CODE).ToArray()
+            ' Lock the data source
+            SyncLock Me.DataSourceLocker
+                ' Get the list
+                Return (From Row As DataRow In Me.GetSource().AsEnumerable Select Row!CODE).ToArray()
+            End SyncLock
         End Get
     End Property
 
@@ -175,13 +203,19 @@ Public Class Languages
     End Property
 
     ' Get the image that rappresenting the language
-    Public Function GetFlag(Code As String) As Bitmap
-        ' Find culture object from the code and create a relation name with the resource file
-        Dim Culture As Globalization.CultureInfo = Globalization.CultureInfo.CreateSpecificCulture(Code)
-        Dim ResourceName As String = String.Format("flag_{0}", Me.FixCultureName(Culture.EnglishName.ToLower))
+    Public Function GetFlag(Code As String) As Drawing.Image
+        Try
+            ' Find culture object from the code and create a relation name with the resource file
+            Dim Culture As Globalization.CultureInfo = Globalization.CultureInfo.CreateSpecificCulture(Code)
+            Dim ResourceName As String = String.Format("flag_{0}", Me.FixCultureName(Culture.EnglishName.ToLower))
 
-        ' Retrieve from resources the bitmap object
-        Return My.Resources.ResourceManager.GetObject(ResourceName)
+            ' Retrieve from resources the bitmap object
+            Return My.Resources.ResourceManager.GetObject(ResourceName)
+
+        Catch ex As Exception
+            ' Return nothing in error case
+            Return Nothing
+        End Try
     End Function
 
     ' Get the server available culture list
@@ -200,111 +234,103 @@ Public Class Languages
 
 #Region " DATABASE INTERFACE "
 
-    ' Get the data source of the database languages
-    Public Function GetSortedView() As DataView
-        ' Get the default view and order it
-        Dim View As DataView = New DataView(Me.Source)
-        View.Sort = "[ISDEFAULT] DESC, [TITLE]"
-
-        ' Return the view
-        Return View
+    ' Get the source table.
+    Public Shadows Function GetSource() As DataTable
+        Return MyBase.GetSource()
     End Function
 
-    ' Add new languages to the database table.
-    ' NB: This function alter the structure of the < translations > database table
-    Protected Shadows Function InsertAndUpdateDb(Code As String, Title As String, Visible As Boolean, IsDefault As Boolean) As Long
+    ' Add a new languages code.
+    Public Shadows Sub Insert(Code As String, Title As String, Visible As Boolean, IsDefault As Boolean)
         ' Check for a valid code
-        If String.IsNullOrEmpty(Code) Then
-            Throw New Exception("The field < CODE > must be valid.")
+        If String.IsNullOrEmpty(Code) Then Throw New Exception("The field < CODE > must be valid.")
+        If Me.Exists(Code) Then Throw New Exception("The field < CODE > cannot be duplicated.")
+
+        ' Insert the new row
+        Dim Pairs As Dictionary(Of String, Object) = New Dictionary(Of String, Object)
+        Pairs.Add("CODE", Code)
+        Pairs.Add("TITLE", Title)
+        Pairs.Add("VISIBLE", Visible)
+        MyBase.Insert(Pairs)
+
+        ' Define the default language
+        If IsDefault Then
+            Me.SetDefaultLanguage(Code)
         End If
-
-        ' Check for duplicated code
-        If Me.Exists(Code) Then
-            Throw New Exception("The field < CODE > cannot be duplicated.")
-        End If
-
-        ' Create the query manager and start the transaction
-        Dim Query As SCFramework.DbQuery = New SCFramework.DbQuery()
-        Query.StartTransaction()
-
-        Try
-            ' Alter the translation table
-            Dim Alter As String = "ALTER TABLE [" & Translations.Instance.GetTableName & "] " &
-                                  "ADD [" & Code & "] NTEXT"
-            Query.Exec(Alter)
-
-            ' Insert the new row
-            Dim Pairs As Dictionary(Of String, Object) = New Dictionary(Of String, Object)
-            Pairs.Add("CODE", Code)
-            Pairs.Add("TITLE", Title)
-            Pairs.Add("VISIBLE", Visible)
-            MyBase.Insert(Pairs)
-
-            ' Define the default language
-            If IsDefault Then Me.SetDefaultLanguage(Code)
-
-            ' Save the changes
-            Query.UpdateDatabase(Me.Source)
-            Query.CommitTransaction()
-
-        Catch ex As Exception
-            ' Rool back
-            Me.Source.RejectChanges()
-            Query.RollBackTransaction()
-
-            ' Propagate the exception
-            Throw ex
-        End Try
-    End Function
+    End Sub
 
     ' Delete languages from the database table.
-    ' NB: This function alter the structure of the < translations > database table
-    Public Shadows Sub DeleteAndUpdateDb(Code As String)
-        ' Create the query manager and start the transaction
-        Dim Query As SCFramework.DbQuery = New SCFramework.DbQuery()
-        Query.StartTransaction()
-
-        Try
-            ' Create the alter translation table
-            Dim Alter As String = "ALTER TABLE [" & Translations.Instance.GetTableName & "] " &
-                                  "DROP COLUMN [" & Code & "]"
-            Query.Exec(Alter)
-
-            ' Find the row and if exists delete it.
-            ' I could use LINQ but in this case is more simple with the standard research because I must find one row using the primary key.
-            ' The datatable, by default, was created in ignore case-sensitive for the string comparison so I don't take care of the "code" status.
-            Dim Row As DataRow = Me.Source.Rows.Find(Code)
-            If Row IsNot Nothing Then Row.Delete()
-
-            ' Save the changes
-            Query.UpdateDatabase(Me.Source)
-            Query.CommitTransaction()
-
-        Catch ex As Exception
-            ' Rool back
-            Me.Source.RejectChanges()
-            Query.RollBackTransaction()
-
-            ' Propagate the exception
-            Throw ex
-        End Try
+    Public Shadows Sub Delete(Code As String)
+        ' Check for empty values
+        If Not SCFramework.Utils.String.IsEmptyOrWhite(Code) Then
+            MyBase.Delete(Me.ToClauses(Code))
+        End If
     End Sub
 
     ' Update a language record
     Public Shadows Sub Update(Code As String, Title As String, Visible As Boolean)
-        ' Find the row and if exists delete it
-        ' I could use LINQ but in this case is more simple with the standard research because I must find one row using the primary key.
-        ' The datatable, by default, was created in ignore case-sensitive for the string comparison so I don't take care of the "code" status.
-        Dim Row As DataRow = Me.Source.Rows.Find(Code)
-        If Row IsNot Nothing Then
-            Row!TITLE = Title
-            Row!VISIBLE = Visible
-        End If
+        ' Check for empty values
+        If Not SCFramework.Utils.String.IsEmptyOrWhite(Code) Then
+            ' Values
+            Dim Values As Dictionary(Of String, Object) = New Dictionary(Of String, Object)
+            Values.Add("TITLE", Title)
+            Values.Add("VISIBLE", Visible)
 
-        ' Save the changes
-        Bridge.Query.UpdateDatabase(Me.Source)
+            ' Call the base method
+            MyBase.Update(Values, Me.ToClauses(Code))
+        End If
     End Sub
 
+    ' Fix the changes on the database using the data source held in memory
+    Public Overrides Function AcceptChanges() As Boolean
+        ' Get the current query object
+        Dim Query As SCFramework.DbQuery = Me.Query
+        ' Determine if must manage the transaction
+        Dim TransactionOwner As Boolean = Not Query.InTransaction
+
+        Try
+            ' Check if not within a transaction
+            If TransactionOwner Then Query.StartTransaction()
+
+            ' Cycle all rows in source
+            For Each Row As DataRow In Me.GetSource().Rows
+                ' Check the row state
+                Select Case Row.RowState
+                    Case DataRowState.Added
+                        ' If added insert the language column to the translations and files table
+                        Translations.Instance.AddLanguageColumn(Row!CODE, Query)
+                        Files.Instance.AddLanguageColumn(Row!CODE, Query)
+
+                    Case DataRowState.Deleted
+                        ' Get the original code from the deleted row
+                        Dim Code As String = Row("CODE", DataRowVersion.Original)
+
+                        ' If deleted remove the language column to the translations and files table
+                        Translations.Instance.DropLanguageColumn(Code, Query)
+                        Files.Instance.DropLanguageColumn(Code, Query)
+
+                End Select
+            Next
+
+            ' Lock the data source and try to update
+            SyncLock Me.DataSourceLocker
+                Query.UpdateDatabase(Me.GetSource())
+            End SyncLock
+
+            ' Commit the transaction is needed
+            If TransactionOwner Then Query.CommitTransaction()
+
+        Catch ex As Exception
+            ' Rollback the transaction is needed and propagate the exception
+            If TransactionOwner Then Query.RollBackTransaction()
+            Throw ex
+
+        End Try
+    End Function
+
+    ' Force to reload data source using the last clauses at the next source access
+    Public Overrides Sub CleanDataSouce()
+        MyBase.GetSource(Nothing, True)
+    End Sub
 
 #End Region
 

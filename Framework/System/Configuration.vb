@@ -15,6 +15,7 @@
 Public Class Configuration
 
     ' Constants
+    Private Const SYSTEM_LOGFILE_NAME = "System.log"
     Private Const TABLE_NAME As String = "SYS_CONFIG"
 
     Private Const APPLICATION_NAME As String = "APPLICATION_NAME"
@@ -41,6 +42,7 @@ Public Class Configuration
 
     Private Const FOLDER_PUBLIC As String = "FOLDER_PUBLIC"
     Private Const FOLDER_TEMPORARY As String = "FOLDER_TEMPORARY"
+    Private Const FOLDER_LOGS As String = "FOLDER_LOGS"
 
 
     ' Structure
@@ -61,12 +63,14 @@ Public Class Configuration
         {Configuration.MAILS_PERBLOCK, "10", "Limit the number of mails sended per block"},
         {Configuration.MAILS_BLOCKDELAY, "5", "The second beetwen send two block of mails"},
         {Configuration.FOLDER_PUBLIC, "public", "The application public folder"},
-        {Configuration.FOLDER_TEMPORARY, "public/temporary", "The application temporary folders"}
+        {Configuration.FOLDER_TEMPORARY, "public/temporary", "The application temporary folder"},
+        {Configuration.FOLDER_LOGS, "public/logs", "The application logs folder"}
     }
 
 
-    ' Data holder
+    ' Holders
     Private mData As DataTable = Nothing
+    Private mSystemLog As SCFramework.LogFile = Nothing
 
 
     ' Contructor
@@ -77,6 +81,11 @@ Public Class Configuration
         ' Check the directories
         Me.CheckDirectory(Me.PublicPath)
         Me.CheckDirectory(Me.TemporaryPath)
+        Me.CheckDirectory(Me.LogsPath)
+
+        ' Create the system log file
+        Dim SystemFileLogPath As String = String.Format("{0}/{1}", Me.LogsPath, Configuration.SYSTEM_LOGFILE_NAME)
+        Me.mSystemLog = New SCFramework.LogFile(SystemFileLogPath)
     End Sub
 
 
@@ -350,6 +359,14 @@ Public Class Configuration
         End Set
     End Property
 
+
+    ' Logs
+    Public ReadOnly Property SystemLogs() As SCFramework.LogFile
+        Get
+            Return Me.mSystemLog
+        End Get
+    End Property
+
 #End Region
 
 #Region " PATHS "
@@ -373,16 +390,31 @@ Public Class Configuration
         End Set
     End Property
 
+    Public Property LogsFolder() As String
+        Get
+            Return Me.GetStringValue(Configuration.FOLDER_LOGS)
+        End Get
+        Set(ByVal Value As String)
+            Me.SetStringValue(Configuration.FOLDER_LOGS, Value)
+        End Set
+    End Property
+
     ' Physical Path
     Public ReadOnly Property PublicPath() As String
         Get
-            Return Hosting.HostingEnvironment.MapPath("~/" & Me.PublicFolder)
+            Return Web.Hosting.HostingEnvironment.MapPath("~/" & Me.PublicFolder)
         End Get
     End Property
 
     Public ReadOnly Property TemporaryPath() As String
         Get
-            Return Hosting.HostingEnvironment.MapPath("~/" & Me.TemporaryFolder)
+            Return Web.Hosting.HostingEnvironment.MapPath("~/" & Me.TemporaryFolder)
+        End Get
+    End Property
+
+    Public ReadOnly Property LogsPath() As String
+        Get
+            Return Web.Hosting.HostingEnvironment.MapPath("~/" & Me.LogsFolder)
         End Get
     End Property
 

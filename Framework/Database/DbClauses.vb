@@ -18,9 +18,9 @@ Public Class DbClauses
     Public Enum ComparerType As Integer
         Equal
         Minor
-        MinorAndEqual
+        MinorOrEqual
         Major
-        MajorAndEqual
+        MajorOrEqual
         Different
         [Like]
         LikeStart
@@ -168,9 +168,9 @@ Public Class DbClauses
                 Select Case Clause.Comparer
                     Case ComparerType.Different : ComparerToString = "<>"
                     Case ComparerType.Major : ComparerToString = ">"
-                    Case ComparerType.MajorAndEqual : ComparerToString = ">="
+                    Case ComparerType.MajorOrEqual : ComparerToString = ">="
                     Case ComparerType.Minor : ComparerToString = "<"
-                    Case ComparerType.MinorAndEqual : ComparerToString = "<="
+                    Case ComparerType.MinorOrEqual : ComparerToString = "<="
                 End Select
 
                 ' Fix the comparer in the case of null values
