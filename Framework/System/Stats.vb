@@ -35,26 +35,6 @@ Public Class Stats
 
 #End Region
 
-#Region " STATIC "
-
-    ' Static instance holder
-    Private Shared mInstance As Stats = Nothing
-
-    ' Instance property
-    Public Shared ReadOnly Property Instance As Stats
-        Get
-            ' Check if null
-            If Stats.mInstance Is Nothing Then
-                Stats.mInstance = New Stats()
-            End If
-
-            ' Return the static instance
-            Return Stats.mInstance
-        End Get
-    End Property
-
-#End Region
-
 #Region " MUST OVERRIDES "
 
     ' Define the linked databse table name

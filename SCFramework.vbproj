@@ -87,8 +87,8 @@
     </Compile>
     <Compile Include="Framework\Database\DbHelperExtended.vb" />
     <Compile Include="Framework\Database\DbSqlBuilder.vb" />
-    <Compile Include="Framework\Global\Tracer.vb" />
-    <Compile Include="Framework\Global\Stats.vb" />
+    <Compile Include="Framework\System\Tracer.vb" />
+    <Compile Include="Framework\System\Stats.vb" />
     <Compile Include="Framework\System\Bridge.vb" />
     <Compile Include="Framework\DataSource\DataSourceHelper.vb" />
     <Compile Include="Framework\System\Files.vb" />
@@ -101,7 +101,6 @@
     <Compile Include="Framework\Global\Crypt.vb" />
     <Compile Include="Framework\Database\DbQuery.vb" />
     <Compile Include="Framework\Global\Utils.vb" />
-    <Compile Include="Framework\Global\HTML.vb" />
     <Compile Include="Framework\Global\Images.vb" />
     <Compile Include="Framework\Global\LogFile.vb" />
     <Compile Include="Framework\Global\ZipHelper.vb" />

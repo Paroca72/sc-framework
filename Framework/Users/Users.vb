@@ -14,26 +14,6 @@
 Public Class Users
     Inherits DbHelper
 
-#Region " STATIC "
-
-    ' Static instance holder
-    Private Shared mInstance As Users = Nothing
-
-    ' Instance property
-    Public Shared ReadOnly Property Instance As Users
-        Get
-            ' Check if null
-            If Users.mInstance Is Nothing Then
-                Users.mInstance = New Users()
-            End If
-
-            ' Return the static instance
-            Return Users.mInstance
-        End Get
-    End Property
-
-#End Region
-
 #Region " OVERRIDES "
 
     Public Overrides Function GetTableName() As String
@@ -56,17 +36,8 @@ Public Class Users
 
     ' Return an array of users
     Private Function GetAllUsers(Source As DataTable) As User()
-        ' Create the container
-        Dim List As List(Of User) = New List(Of User)
-
-        ' Cycle all rows
-        For Each Row As DataRow In Source.Rows
-            ' Create the user and insert it inside the list
-            List.Add(New User(Row))
-        Next
-
-        ' Return
-        Return List.ToArray()
+        Return (From Row In Source.AsEnumerable()
+                Select New User(Row)).ToArray()
     End Function
 
 #End Region
@@ -75,23 +46,15 @@ Public Class Users
 
     ' Get a user details filtered by email
     Public Function GetUser(ID As Long) As User
-        ' Create the clausole
-        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
-        Clauses.Add("ID_USER", ID)
-
         ' If have one or more rows return the first else null
-        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
+        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Me.ToClauses(ID))
         Return Me.GetFirstUser(Source)
     End Function
 
     ' Get a user details filtered by email
     Public Function GetUser(EMail As String) As User
-        ' Create the clausole
-        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
-        Clauses.Add("EMAIL", EMail)
-
         ' If have one or more rows return the first else null
-        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
+        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, SCFramework.DbClauses.FromPair("EMAIL", EMail))
         Return Me.GetFirstUser(Source)
     End Function
 
@@ -134,23 +97,15 @@ Public Class Users
 
     ' Check if a login already exists
     Public Function LoginExists(Login As String) As Boolean
-        ' Create the clausole
-        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
-        Clauses.Add("LOGIN", Login)
-
         ' If have one or more rows return the first else null
-        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
+        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, SCFramework.DbClauses.FromPair("LOGIN", Login))
         Return Source.Rows.Count > 0
     End Function
 
     ' Check if a email already exists
     Public Function EMailExists(EMail As String) As Boolean
-        ' Create the clausole
-        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
-        Clauses.Add("EMAIL", EMail)
-
         ' If have one or more rows return the first else null
-        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
+        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, SCFramework.DbClauses.FromPair("EMAIL", EMail))
         Return Source.Rows.Count > 0
     End Function
 

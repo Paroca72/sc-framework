@@ -73,6 +73,8 @@ Public Class Configuration
     Private mSystemLog As SCFramework.LogFile = Nothing
 
 
+#Region " CONSTRUCTOR "
+
     ' Contructor
     Public Sub New()
         ' Load and fix data
@@ -87,25 +89,6 @@ Public Class Configuration
         Dim SystemFileLogPath As String = String.Format("{0}/{1}", Me.LogsPath, Configuration.SYSTEM_LOGFILE_NAME)
         Me.mSystemLog = New SCFramework.LogFile(SystemFileLogPath)
     End Sub
-
-
-#Region " STATIC "
-
-    ' Static instance holder
-    Private Shared mInstance As Configuration = Nothing
-
-    ' Instance property
-    Public Shared ReadOnly Property Instance As Configuration
-        Get
-            ' Check if null
-            If Configuration.mInstance Is Nothing Then
-                Configuration.mInstance = New Configuration()
-            End If
-
-            ' Return the static instance
-            Return Configuration.mInstance
-        End Get
-    End Property
 
 #End Region
 

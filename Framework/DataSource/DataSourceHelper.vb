@@ -101,13 +101,6 @@ Public MustInherit Class DataSourceHelper
         End If
     End Function
 
-    ' Return the if memory managed
-    Private ReadOnly Property IsMemoryManaged() As Boolean
-        Get
-            Return Me.mDataSource Is Nothing
-        End Get
-    End Property
-
 #End Region
 
 #Region " DATABASE "
@@ -188,6 +181,13 @@ Public MustInherit Class DataSourceHelper
         End Get
     End Property
 
+    ' Return the if memory managed
+    Public ReadOnly Property IsMemoryManaged() As Boolean
+        Get
+            Return Me.mDataSource Is Nothing
+        End Get
+    End Property
+
 #End Region
 
 #Region " PUBLIC "
@@ -250,7 +250,7 @@ Public MustInherit Class DataSourceHelper
                 ' Cycle rows and for each row to delete extract the pairs key
                 For Each Row As DataRow In Source.Rows
                     ' Exctract the current primary keys and delete the items inside the subordinate
-                    Subordinate.Delete(New DbClauses(Me.ExtractLocalKeysPairs(Row)))
+                    Subordinate.Delete(SCFramework.DbClauses.FromRange(Me.ExtractLocalKeysPairs(Row)))
                 Next
             Next
 
@@ -366,7 +366,10 @@ Public MustInherit Class DataSourceHelper
     End Function
 
     ' Fix the changes on the database using the data source held in memory
-    Public Overridable Function AcceptChanges() As Boolean
+    Public Overridable Sub AcceptChanges()
+        ' Only if work in memory
+        If Not Me.IsMemoryManaged Then Exit Sub
+
         ' Get the current query object
         Dim Query As SCFramework.DbQuery = Me.Query
         ' Determine if must manage the transaction
@@ -395,10 +398,13 @@ Public MustInherit Class DataSourceHelper
             Throw ex
 
         End Try
-    End Function
+    End Sub
 
     ' Reject the soure changes and also on all the subordinates
     Public Overridable Sub RejectChanges()
+        ' Only if work in memory
+        If Not Me.IsMemoryManaged Then Exit Sub
+
         ' Cycle all the subordinates for rejectr the changes
         For Each Subordinate As DataSourceHelper In Me.mSubordinates
             Subordinate.RejectChanges()

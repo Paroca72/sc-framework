@@ -4,13 +4,17 @@
 ' Languages
 ' di Samuele Carassai
 '
-' Languages manager provide the methods to manage the framework languages.
-' This classes inherits from DataSourceHelper but is ALWAYS memory managed. Some base methods are 
-' shadowed or overridden to avoid to change the management way.
+' Languages manager class provide the methods to manage the framework languages.
+' This classes inherits from DataSourceHelper but is ALWAYS memory managed. 
+' Some base methods are shadowed or overridden to avoid to change the management way.
+' Since memory managed you must remember to call the AcceptChanges method to confirm
+' every changes.
 '
 ' As strictly connected to other classes, changes will reflected on:
 '   + <SCFramework.Files> manager class and the related database table.
 '   + <SCFramework.Translations> manager class and the related database table.
+'
+' The static access to this class can be found in the <SCFramework.Bridge> global class.
 '
 ' Version 5.0.0
 ' Created --/--/----
@@ -36,27 +40,6 @@ Public Class Languages
         ' Get the source and keep it in memory
         MyBase.GetSource(Nothing, True)
     End Sub
-
-#End Region
-
-#Region " STATIC "
-
-    ' Static instance holder
-    Private Shared mInstance As Languages = Nothing
-
-    ' Instance property
-    Public Shared ReadOnly Property Instance As Languages
-        Get
-            ' Check if null
-            If Languages.mInstance Is Nothing Then
-                ' Create the structure and keep it in memory
-                Languages.mInstance = New Languages()
-            End If
-
-            ' Return the static instance
-            Return Languages.mInstance
-        End Get
-    End Property
 
 #End Region
 
@@ -139,6 +122,7 @@ Public Class Languages
     End Function
 
     ' Get all languages code
+    ' TODO: improve the performance storing permanently
     Public ReadOnly Property AllCodes() As String()
         Get
             ' Lock the data source
@@ -230,10 +214,6 @@ Public Class Languages
                 Select Culture.Name).Distinct().ToArray()
     End Function
 
-#End Region
-
-#Region " DATABASE INTERFACE "
-
     ' Get the source table.
     Public Shadows Function GetSource() As DataTable
         Return MyBase.GetSource()
@@ -256,12 +236,15 @@ Public Class Languages
         If IsDefault Then
             Me.SetDefaultLanguage(Code)
         End If
+
+        ' Reset the old code
     End Sub
 
     ' Delete languages from the database table.
     Public Shadows Sub Delete(Code As String)
         ' Check for empty values
         If Not SCFramework.Utils.String.IsEmptyOrWhite(Code) Then
+            Me.mAllCodes = Nothing
             MyBase.Delete(Me.ToClauses(Code))
         End If
     End Sub
@@ -281,7 +264,7 @@ Public Class Languages
     End Sub
 
     ' Fix the changes on the database using the data source held in memory
-    Public Overrides Function AcceptChanges() As Boolean
+    Public Overrides Sub AcceptChanges()
         ' Get the current query object
         Dim Query As SCFramework.DbQuery = Me.Query
         ' Determine if must manage the transaction
@@ -297,16 +280,18 @@ Public Class Languages
                 Select Case Row.RowState
                     Case DataRowState.Added
                         ' If added insert the language column to the translations and files table
-                        Translations.Instance.AddLanguageColumn(Row!CODE, Query)
-                        Files.Instance.AddLanguageColumn(Row!CODE, Query)
+                        ' TODO
+                        'Translations.Instance.AddLanguageColumn(Row!CODE, Query)
+                        'Files.Instance.AddLanguageColumn(Row!CODE, Query)
 
                     Case DataRowState.Deleted
                         ' Get the original code from the deleted row
                         Dim Code As String = Row("CODE", DataRowVersion.Original)
 
                         ' If deleted remove the language column to the translations and files table
-                        Translations.Instance.DropLanguageColumn(Code, Query)
-                        Files.Instance.DropLanguageColumn(Code, Query)
+                        ' TODO
+                        'Translations.Instance.DropLanguageColumn(Code, Query)
+                        'Files.Instance.DropLanguageColumn(Code, Query)
 
                 End Select
             Next
@@ -325,10 +310,11 @@ Public Class Languages
             Throw ex
 
         End Try
-    End Function
+    End Sub
 
     ' Force to reload data source using the last clauses at the next source access
     Public Overrides Sub CleanDataSouce()
+        Me.mAllCodes = Nothing
         MyBase.GetSource(Nothing, True)
     End Sub
 

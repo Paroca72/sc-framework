@@ -30,7 +30,7 @@ Public Class DbClauses
     ' Single clause
     Private Class SingleClause
 
-        Public Clauses As SCFramework.DbClauses = Nothing
+        Public Clauses As DbClauses = Nothing
         Public Column As String = Nothing
         Public Comparer As ComparerType = ComparerType.Equal
         Public Value As Object = Nothing
@@ -43,47 +43,33 @@ Public Class DbClauses
     Private mClauses As List(Of SingleClause) = New List(Of SingleClause)
 
 
-#Region " CONSTRUCTOR "
-
-    ' Contructor
-    Public Sub New()
-    End Sub
-
-    Public Sub New(Column As String, Value As Object)
-        Me.Add(Column, Value)
-    End Sub
-
-    Public Sub New(Clauses As IDictionary(Of String, Object))
-        Me.Add(Clauses)
-    End Sub
-
-#End Region
-
 #Region " STATIC "
 
-    ' Create a false clauses
-    Public Shared Function AlwaysFalse() As SCFramework.DbClauses
-        ' Create the false clauses
-        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
-        Clauses.Add("1 <> 1")
+    ' Create an empty clauses
+    Public Shared Function Empty() As DbClauses
+        Return New SCFramework.DbClauses()
+    End Function
 
-        ' Return the new object
-        Return Clauses
+    ' Create a false clauses
+    Public Shared Function AlwaysFalse() As DbClauses
+        Return DbClauses.Empty.Add("1 <> 1")
     End Function
 
     ' Create a true clauses
-    Public Shared Function AlwaysTrue() As SCFramework.DbClauses
-        ' Create the false clauses
-        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
-        Clauses.Add("1 = 1")
-
+    Public Shared Function AlwaysTrue() As DbClauses
         ' Return the new object
-        Return Clauses
+        Return DbClauses.Empty.Add("1 = 1")
     End Function
 
-    ' Create an empty clauses
-    Public Shared Function Empty() As SCFramework.DbClauses
-        Return New SCFramework.DbClauses()
+    ' Create a clasuses from a pair values.
+    ' The comparison will be as equal.
+    Public Shared Function FromPair(Column As String, Value As Object) As DbClauses
+        Return DbClauses.Empty.Add(Column, Value)
+    End Function
+
+    ' Create a clasuses from range of clauses.
+    Public Shared Function FromRange(Clauses As IDictionary(Of String, Object)) As DbClauses
+        Return DbClauses.Empty.Add(Clauses)
     End Function
 
 #End Region
@@ -91,7 +77,8 @@ Public Class DbClauses
 #Region " PUBLIC "
 
     ' Add a clause
-    Public Sub Add(Column As String, Comparer As ComparerType, Value As Object, Optional GroupAsAnd As Boolean = True)
+    Public Function Add(Column As String, Comparer As ComparerType, Value As Object,
+                        Optional GroupAsAnd As Boolean = True) As DbClauses
         ' Create the single clause
         Dim Clause As SingleClause = New SingleClause()
         Clause.Column = Column
@@ -101,10 +88,14 @@ Public Class DbClauses
 
         ' Add to clauses list
         Me.mClauses.Add(Clause)
-    End Sub
+
+        ' Return the class reference
+        Return Me
+    End Function
 
     ' Add a sql
-    Public Sub Add(Sql As String, Optional GroupAsAnd As Boolean = True)
+    Public Function Add(Sql As String,
+                        Optional GroupAsAnd As Boolean = True) As DbClauses
         ' Create the single clause
         Dim Clause As SingleClause = New SingleClause()
         Clause.Sql = Sql
@@ -112,21 +103,28 @@ Public Class DbClauses
 
         ' Add to clauses list
         Me.mClauses.Add(Clause)
-    End Sub
+
+        ' Return the class reference
+        Return Me
+    End Function
 
     ' Add a list of clauses defined as key and value pair
-    Public Sub Add(Clauses As IDictionary(Of String, Object))
+    Public Function Add(Clauses As IDictionary(Of String, Object)) As DbClauses
         ' Cycle all clause of list
         For Each Column As String In Clauses.Keys
             ' Add
             Me.Add(Column, ComparerType.Equal, Clauses(Column), True)
         Next
-    End Sub
+
+        ' Return the class reference
+        Return Me
+    End Function
 
     ' Add a list of clauses
-    Public Sub Add(Clauses() As SCFramework.DbClauses, Optional GroupAsAnd As Boolean = True)
+    Public Function Add(Clauses() As DbClauses,
+                        Optional GroupAsAnd As Boolean = True) As DbClauses
         ' Cycle all clauses
-        For Each CurrentClauses As SCFramework.DbClauses In Clauses
+        For Each CurrentClauses As DbClauses In Clauses
             ' Create the single clause
             Dim Clause As SingleClause = New SingleClause()
             Clause.Clauses = CurrentClauses
@@ -135,7 +133,10 @@ Public Class DbClauses
             ' Add to clauses list
             Me.mClauses.Add(Clause)
         Next
-    End Sub
+
+        ' Return the class reference
+        Return Me
+    End Function
 
     ' Build the single clause
     Public Function Builder(ForFilter As Boolean) As String
@@ -198,7 +199,7 @@ Public Class DbClauses
     End Function
 
     ' Check if equal to another clauses
-    Public Function IsEqual(Clauses As SCFramework.DbClauses) As Boolean
+    Public Function IsEqual(Clauses As DbClauses) As Boolean
         Return Clauses IsNot Nothing AndAlso Me.ForSql.Equals(Clauses.ForSql)
     End Function
 
