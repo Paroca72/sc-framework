@@ -73,7 +73,6 @@
     <Import Include="System.Threading" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Controls\Image\Image.vb" />
     <Compile Include="Framework\Database\DbClauses.vb" />
     <Compile Include="Framework\Database\DbHelper.vb" />
     <Compile Include="Framework\Base\MasterPage.vb">
@@ -91,12 +90,11 @@
     <Compile Include="Framework\System\Stats.vb" />
     <Compile Include="Framework\System\Bridge.vb" />
     <Compile Include="Framework\DataSource\DataSourceHelper.vb" />
-    <Compile Include="Framework\System\Files.vb" />
-    <Compile Include="Framework\System\Languages.vb" />
-    <Compile Include="Framework\System\Mails.vb" />
+    <Compile Include="Framework\Localization\Files.vb" />
+    <Compile Include="Framework\Localization\Languages.vb" />
     <Compile Include="Framework\System\Mime.vb" />
     <Compile Include="Framework\System\Configuration.vb" />
-    <Compile Include="Framework\System\Translations.vb" />
+    <Compile Include="Framework\Localization\Translations.vb" />
     <Compile Include="Framework\Users\User.vb" />
     <Compile Include="Framework\Global\Crypt.vb" />
     <Compile Include="Framework\Database\DbQuery.vb" />
@@ -1360,6 +1358,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\mime.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Controls\" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

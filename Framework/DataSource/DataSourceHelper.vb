@@ -15,12 +15,20 @@
 Public MustInherit Class DataSourceHelper
     Inherits DbHelperExtended
 
+    ' Static
+    Private Const CONCURRENTACCESS_COLUMNNAME As String = "SCFRAMEWORK_SESSIONID"
+
     ' Holders
     Private mDataSource As DataTable = Nothing
     Private mDataSourceLocker As Object = New Object()
 
     Private mSubordinates As List(Of DataSourceHelper) = Nothing
     Private mLastClauses As SCFramework.DbClauses = Nothing
+
+    Private mHasChanges As Boolean = False
+
+    Private mStaticConcurrentAccessSafeMode = False
+    Private mSessionID As String = Nothing
 
 
 #Region " CONSTRUCTOR "
@@ -31,6 +39,7 @@ Public MustInherit Class DataSourceHelper
 
         ' Init
         Me.mSubordinates = New List(Of DataSourceHelper)
+        If Bridge.Session IsNot Nothing Then Me.mSessionID = Bridge.Session.SessionID
     End Sub
 
 #End Region
@@ -100,6 +109,105 @@ Public MustInherit Class DataSourceHelper
             Return True
         End If
     End Function
+
+    ' Check for the static concurrent access safe mode column in the data source
+    Private Sub CheckForStaticModeSafeColumn(Source As DataTable)
+        ' Check for empty values
+        If Source IsNot Nothing Then
+            ' Check the state
+            Select Case Me.mStaticConcurrentAccessSafeMode
+                Case True
+                    ' Check if already exists
+                    If Not Source.Columns.Contains(DataSourceHelper.CONCURRENTACCESS_COLUMNNAME) Then
+                        ' Add the column
+                        Source.Columns.Add(DataSourceHelper.CONCURRENTACCESS_COLUMNNAME, GetType(String))
+                    End If
+
+                Case False
+                    ' Check if exists
+                    If Source.Columns.Contains(DataSourceHelper.CONCURRENTACCESS_COLUMNNAME) Then
+                        ' Add the column
+                        Source.Columns.Remove(DataSourceHelper.CONCURRENTACCESS_COLUMNNAME)
+                    End If
+
+            End Select
+        End If
+    End Sub
+
+    ' Adjust the clauses considering is the static safe is active
+    Private Function AdjustClauses(Clauses As SCFramework.DbClauses) As SCFramework.DbClauses
+        ' Check for static concurrent access safe is active
+        If Me.mStaticConcurrentAccessSafeMode And Me.mSessionID IsNot Nothing Then
+            ' Create the session clauses
+            Dim SessionClauses As SCFramework.DbClauses = SCFramework.DbClauses.Empty
+            SessionClauses.Add(DataSourceHelper.CONCURRENTACCESS_COLUMNNAME, DbClauses.ComparerType.Equal, Nothing)
+            SessionClauses.Add(DataSourceHelper.CONCURRENTACCESS_COLUMNNAME, DbClauses.ComparerType.Equal, Bridge.Session.SessionID, False)
+
+            ' Adjust
+            Dim AdjustedClauses As SCFramework.DbClauses = SCFramework.DbClauses.Empty
+            AdjustedClauses.Add(Clauses)
+            AdjustedClauses.Add(SessionClauses)
+
+            ' Return
+            Return AdjustedClauses
+
+        Else
+            ' Return the original one
+            Return Clauses
+        End If
+    End Function
+
+    ' Get the data source holded in memory
+    Private Function SelectDataSource(Clauses As SCFramework.DbClauses)
+        ' If the cluases not changed return the keep in memory source
+        If Not Me.ClausesIsChanged(Clauses) And Not Me.mStaticConcurrentAccessSafeMode Then
+            Return Me.mDataSource
+
+        Else
+            ' Filter the source with the new clauses
+            Return Me.mDataSource.AsEnumerable().Select(Me.AdjustClauses(Clauses).ForFilter)
+        End If
+    End Function
+
+    ' Create a new data source
+    Private Function CreateNewDataSource(Clauses As SCFramework.DbClauses)
+        ' I must create a new datasource with the proper columns settings
+        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
+        Source.CaseSensitive = False
+        Source.Locale = CultureInfo.InvariantCulture
+
+        ' Static safe column
+        Me.CheckForStaticModeSafeColumn(Source)
+
+        ' Data source columns settings
+        If Me.PrimaryKeys.Count > 0 Then SCFramework.Utils.DataTable.SetPrimaryKeys(Source, Me.PrimaryKeys.ToArray)
+        If Me.AutoNumbers.Count > 0 Then SCFramework.Utils.DataTable.SetAutoIncrements(Source, Me.AutoNumbers.ToArray)
+        If Me.OrderColumns.Count > 0 Then Source = Source.AsEnumerable().OrderBy("", Me.OrderColumns)
+
+        ' TODO: all other columns
+
+        ' Return
+        Return Source
+    End Function
+
+    ' Add the session column id information
+    Private Sub AddSessionID(Values As IDictionary(Of String, Object))
+        ' Check for empty values
+        If Me.mSessionID IsNot Nothing And Me.mStaticConcurrentAccessSafeMode And
+            Not Values.ContainsKey(DataSourceHelper.CONCURRENTACCESS_COLUMNNAME) Then
+            ' Add the session column
+            Values.Add(DataSourceHelper.CONCURRENTACCESS_COLUMNNAME, Me.mSessionID)
+        End If
+    End Sub
+
+    Private Sub AddSessionID(Row As DataRow)
+        ' Check for empty values
+        If Me.mSessionID IsNot Nothing And Me.mStaticConcurrentAccessSafeMode And
+            Row.Table.Columns.Contains(DataSourceHelper.CONCURRENTACCESS_COLUMNNAME) Then
+            ' Add the session column
+            Row(DataSourceHelper.CONCURRENTACCESS_COLUMNNAME) = Me.mSessionID
+        End If
+    End Sub
 
 #End Region
 
@@ -177,7 +285,7 @@ Public MustInherit Class DataSourceHelper
     ' True if has changes
     Public ReadOnly Property HasChanges() As Boolean
         Get
-            Return Me.mDataSource IsNot Nothing AndAlso Me.mDataSource.GetChanges().Rows.Count > 0
+            Return Me.mHasChanges
         End Get
     End Property
 
@@ -188,6 +296,17 @@ Public MustInherit Class DataSourceHelper
         End Get
     End Property
 
+    ' Set/get the static concurrent access safe mode to the data source
+    Public Property StaticConcurrentAccessSafeMode As Boolean
+        Get
+            Return Me.mStaticConcurrentAccessSafeMode
+        End Get
+        Set(value As Boolean)
+            Me.mStaticConcurrentAccessSafeMode = value
+            Me.CheckForStaticModeSafeColumn(Me.mDataSource)
+        End Set
+    End Property
+
 #End Region
 
 #Region " PUBLIC "
@@ -196,41 +315,13 @@ Public MustInherit Class DataSourceHelper
     Public Overridable Function GetSource(Optional Clauses As SCFramework.DbClauses = Nothing,
                                           Optional KeepInMemory As Boolean = False) As DataTable
         ' Hold the source
-        Dim Source As DataTable = Me.mDataSource
-
-        ' Check if hove something held in memory
-        If Source IsNot Nothing Then
-            ' If the cluases not changed return the keep in memory source
-            If Not Me.ClausesIsChanged(Clauses) Then
-                Return Source
-
-            Else
-                ' Filter the source with the new clauses
-                Source = Source.AsEnumerable().Select(Clauses.ForFilter)
-            End If
-
-        Else
-            ' I must create a new datasource with the proper columns settings
-            Source = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
-            Source.CaseSensitive = False
-            Source.Locale = CultureInfo.InvariantCulture
-
-            ' Data source columns settings
-            If Me.PrimaryKeys.Count > 0 Then SCFramework.Utils.DataTable.SetPrimaryKeys(Source, Me.PrimaryKeys.ToArray)
-            If Me.AutoNumbers.Count > 0 Then SCFramework.Utils.DataTable.SetAutoIncrements(Source, Me.AutoNumbers.ToArray)
-            If Me.OrderColumns.Count > 0 Then Source = Source.AsEnumerable().OrderBy("", Me.OrderColumns)
-
-            ' TODO: all other columns
-        End If
+        GetSource = IIf(Me.IsMemoryManaged, Me.SelectDataSource(Clauses), Me.CreateNewDataSource(Clauses))
 
         ' Hold the status is needed 
         If KeepInMemory Then
-            Me.mDataSource = Source
+            Me.mDataSource = GetSource
             Me.mLastClauses = Clauses
         End If
-
-        ' Return
-        Return Source
     End Function
 
     ' Delete command
@@ -241,9 +332,8 @@ Public MustInherit Class DataSourceHelper
         End If
 
         Try
-            ' Get the filtered table and check for empty values
-            Dim Source As DataTable = IIf(Me.IsMemoryManaged, Me.mDataSource, Me.GetSource(Clauses))
-            If Source Is Nothing Then Return 0
+            ' Get the filtered table
+            Dim Source As DataTable = Me.GetSource(Clauses)
 
             ' Cycle subortdinates for delete the references
             For Each Subordinate As DataSourceHelper In Me.mSubordinates
@@ -259,11 +349,13 @@ Public MustInherit Class DataSourceHelper
                 ' Delete all row in the view
                 For Each Row As DataRow In Source.Rows
                     ' Delete and store the current row
+                    Me.AddSessionID(Row)
                     Row.Delete()
                 Next
             End SyncLock
 
             ' If if not memory managed update the database
+            Me.mHasChanges = Me.mHasChanges Or Source.Rows.Count > 0
             If Not Me.IsMemoryManaged Then
                 Me.UpdateDatabase(Source)
             End If
@@ -280,16 +372,14 @@ Public MustInherit Class DataSourceHelper
 
     ' Insert command
     Public Overrides Function Insert(Values As IDictionary(Of String, Object)) As Long
-        ' Get the filtered table and check for empty values
-        Dim Source As DataTable = IIf(Me.IsMemoryManaged,
-                                      Me.mDataSource,
-                                      Me.GetSource(SCFramework.DbClauses.AlwaysFalse))
-        If Source Is Nothing Then Return 0
-
-        ' Create the new row
+        ' Get the filtered table and create the new record
+        Dim Source As DataTable = Me.GetSource(SCFramework.DbClauses.AlwaysFalse)
         Dim NewRow As DataRow = Me.mDataSource.NewRow
 
         Try
+            ' Add the session is column to the values list if needed
+            Me.AddSessionID(Values)
+
             ' Fill the row cycling all the field inside the values list.
             For Each Field As String In Values.Keys
                 ' If the field exists write the value
@@ -300,6 +390,7 @@ Public MustInherit Class DataSourceHelper
 
             ' Insert the new ID
             Me.mDataSource.Rows.Add(NewRow)
+            Me.mHasChanges = True
 
             ' If if not memory managed update the database
             If Not Me.IsMemoryManaged Then
@@ -331,11 +422,13 @@ Public MustInherit Class DataSourceHelper
             Throw New Exception("This command will update all row in the table!")
         End If
 
-        ' Get the filtered table and check for empty values
-        Dim Source As DataTable = IIf(Me.IsMemoryManaged, Me.mDataSource, Me.GetSource(Clauses))
-        If Source Is Nothing Then Return 0
+        ' Get the filtered table
+        Dim Source As DataTable = Me.GetSource(Clauses)
 
         Try
+            ' Add the session is column to the values list if needed
+            Me.AddSessionID(Values)
+
             ' Lock the data source
             SyncLock Me.DataSourceLocker
                 ' Cycle all rows in the view
@@ -351,6 +444,7 @@ Public MustInherit Class DataSourceHelper
             End SyncLock
 
             ' If if not memory managed update the database
+            Me.mHasChanges = Me.mHasChanges Or Source.Rows.Count > 0
             If Not Me.IsMemoryManaged Then
                 Me.UpdateDatabase(Source)
             End If
@@ -390,6 +484,7 @@ Public MustInherit Class DataSourceHelper
             End SyncLock
 
             ' Commit the transaction is needed
+            Me.mHasChanges = False
             If TransactionOwner Then Query.CommitTransaction()
 
         Catch ex As Exception
@@ -412,11 +507,13 @@ Public MustInherit Class DataSourceHelper
 
         ' Reject the source changes
         Me.mDataSource.RejectChanges()
+        Me.mHasChanges = False
     End Sub
 
     ' Force to reload data source using the last clauses at the next source access
     Public Overridable Sub CleanDataSouce()
         Me.mDataSource = Nothing
+        Me.mHasChanges = False
     End Sub
 
 #End Region

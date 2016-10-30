@@ -1,9 +1,19 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "SCFramework", "SCFramework.vbproj", "{B0DABCBD-4DDE-41E7-A4C7-B985E6727D69}"
+EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "Test", "..\SCFrameworkTest\Test.vbproj", "{691A4D38-D2A9-4FFE-A69A-E4971D4B1B2E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B0DABCBD-4DDE-41E7-A4C7-B985E6727D69} = {B0DABCBD-4DDE-41E7-A4C7-B985E6727D69}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B03D24EC-D262-4284-8C7D-4A43B4B1002A}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +25,10 @@ Global
 		{B0DABCBD-4DDE-41E7-A4C7-B985E6727D69}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B0DABCBD-4DDE-41E7-A4C7-B985E6727D69}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B0DABCBD-4DDE-41E7-A4C7-B985E6727D69}.Release|Any CPU.Build.0 = Release|Any CPU
+		{691A4D38-D2A9-4FFE-A69A-E4971D4B1B2E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{691A4D38-D2A9-4FFE-A69A-E4971D4B1B2E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{691A4D38-D2A9-4FFE-A69A-E4971D4B1B2E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{691A4D38-D2A9-4FFE-A69A-E4971D4B1B2E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

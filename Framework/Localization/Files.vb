@@ -130,22 +130,9 @@ Public Class Files
 
     ' Insert command
     Public Overrides Function Insert(Values As IDictionary(Of String, Object)) As Long
-        ' Check all path fields
+        ' Check the fields and call the base
         Me.CheckPathFields(Values)
-
-        ' Call the base 
-        Return MyBase.Insert(Values)
-    End Function
-
-    Public Overloads Function Insert(Path As String,
-                                     Optional Name As String = Nothing,
-                                     Optional Language As String = Nothing) As Long
-        ' Fix the file name
-        If Name Is Nothing Then Name = IO.Path.GetFileName(Name)
-
-        ' Create the values
-        Dim Values As Dictionary(Of String, Object) = New Dictionary(Of String, Object)()
-        Values.Add()
+        MyBase.Insert(Values)
     End Function
 
     ' Delete command
@@ -158,6 +145,11 @@ Public Class Files
 
         ' Call the base method
         MyBase.Delete(Clauses)
+    End Function
+
+    ' Update command
+    Public Shadows Function Update() As Long
+        Throw New Exception("Cannot update the files list through this class.")
     End Function
 
     ' Accept the datasource changes

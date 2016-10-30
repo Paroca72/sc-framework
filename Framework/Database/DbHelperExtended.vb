@@ -95,7 +95,7 @@ Public MustInherit Class DbHelperExtended
     ' Sql analisys
     Private Sub SqlAnalisys(Connection As DbConnection)
         ' Define the request for a specific table
-        Dim Sql As String = DbSqlBuilder.BuildSelectCommand(Me.GetViewName(), Nothing, Nothing)
+        Dim Sql As String = DbSqlBuilder.SelectCommand(Me.GetViewName(), Nothing, Nothing)
 
         ' Find the reader
         Dim Command As SqlCommand = New SqlCommand(SQL, Connection)

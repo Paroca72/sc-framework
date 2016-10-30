@@ -123,7 +123,6 @@ Public Class Bridge
     ' Holders
     Private Shared mStats As SCFramework.Stats = Nothing
     Private Shared mConfiguration As SCFramework.Configuration = Nothing
-    Private Shared mLanguages As SCFramework.Languages = Nothing
 
 
     ' Stats

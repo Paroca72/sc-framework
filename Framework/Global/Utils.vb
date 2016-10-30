@@ -64,8 +64,8 @@ Namespace Utils
     Public Class ListControl
 
         ' Check if at least one items of the list control is checked
-        Public Shared Function AtLeastOne([Control] As System.Web.UI.WebControls.ListControl) As Boolean
-            For Each Item As ListItem In [Control].Items
+        Public Shared Function AtLeastOne([Control] As Web.UI.WebControls.ListControl) As Boolean
+            For Each Item As Web.UI.WebControls.ListItem In [Control].Items
                 If Item.Selected Then
                     Return True
                 End If
@@ -74,8 +74,8 @@ Namespace Utils
         End Function
 
         ' Check if all the items are checked
-        Public Shared Function IsAllSelected([Control] As System.Web.UI.WebControls.ListControl) As Boolean
-            For Each Item As ListItem In [Control].Items
+        Public Shared Function IsAllSelected([Control] As Web.UI.WebControls.ListControl) As Boolean
+            For Each Item As Web.UI.WebControls.ListItem In [Control].Items
                 If Not Item.Selected Then
                     Return False
                 End If

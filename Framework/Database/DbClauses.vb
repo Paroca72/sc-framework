@@ -72,6 +72,11 @@ Public Class DbClauses
         Return DbClauses.Empty.Add(Clauses)
     End Function
 
+    ' Create a clasuses from another clauses.
+    Public Shared Function FromClauses(Clauses As DbClauses) As DbClauses
+        Return DbClauses.Empty.Add(Clauses)
+    End Function
+
 #End Region
 
 #Region " PUBLIC "

@@ -244,7 +244,6 @@ Public Class Languages
     Public Shadows Sub Delete(Code As String)
         ' Check for empty values
         If Not SCFramework.Utils.String.IsEmptyOrWhite(Code) Then
-            Me.mAllCodes = Nothing
             MyBase.Delete(Me.ToClauses(Code))
         End If
     End Sub
@@ -314,7 +313,6 @@ Public Class Languages
 
     ' Force to reload data source using the last clauses at the next source access
     Public Overrides Sub CleanDataSouce()
-        Me.mAllCodes = Nothing
         MyBase.GetSource(Nothing, True)
     End Sub
 

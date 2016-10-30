@@ -387,7 +387,7 @@ Public Class DbQuery
     ' Generic insert command
     Public Function Insert(TableName As String, Values As IDictionary(Of String, Object)) As Long
         ' Execute the query command
-        Return Me.Exec(DbSqlBuilder.BuildInsertCommand(TableName, Values), True)
+        Return Me.Exec(DbSqlBuilder.InsertCommand(TableName, Values), True)
     End Function
 
     ' Get the last identity
@@ -405,13 +405,13 @@ Public Class DbQuery
     ' Generic update command
     Public Function Update(TableName As String, Values As IDictionary(Of String, Object), Clause As SCFramework.DbClauses) As Long
         ' Execute the query command
-        Return Me.Exec(DbSqlBuilder.BuildUpdateCommand(TableName, Values, Clause), True)
+        Return Me.Exec(DbSqlBuilder.UpdateCommand(TableName, Values, Clause), True)
     End Function
 
     ' Generic delete command
     Public Function Delete(TableName As String, Clause As SCFramework.DbClauses) As Long
         ' Execute the query command
-        Return Me.Exec(DbSqlBuilder.BuildDeleteCommand(TableName, Clause), True)
+        Return Me.Exec(DbSqlBuilder.DeleteCommand(TableName, Clause), True)
     End Function
 
 #End Region
@@ -452,23 +452,19 @@ Public Class DbQuery
     ' Create a sql command and put the result inside a datatable
     Public Function Table(TableName As String, Fields As ICollection, Clauses As SCFramework.DbClauses) As DataTable
         ' Execute the query command
-        Return Me.Table(DbSqlBuilder.BuildSelectCommand(TableName, Fields, Clauses), TableName)
+        Return Me.Table(DbSqlBuilder.SelectCommand(TableName, Fields, Clauses), TableName)
     End Function
 
     ' Create a sql command and put the result inside a datatable
     Public Function Table(TableName As String) As DataTable
         ' Execute the query command
-        Return Me.Table(DbSqlBuilder.BuildSelectCommand(TableName, Nothing, Nothing), TableName)
+        Return Me.Table(DbSqlBuilder.SelectCommand(TableName, Nothing, Nothing), TableName)
     End Function
 
     ' Get and empty table
     Public Function EmptyTable(TableName As String) As DataTable
-        ' Create a false clause for give back an empty table
-        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
-        Clauses.Add("1 <> 1", False)
-
         ' Return the table
-        Return Me.Table(TableName, Nothing, Clauses)
+        Return Me.Table(TableName, Nothing, SCFramework.DbClauses.AlwaysFalse)
     End Function
 
     ' Execute a sql command and get the first row details
@@ -481,26 +477,6 @@ Public Class DbQuery
         Else
             Return Nothing
         End If
-    End Function
-
-    ' Execute a sql command and put the result inside a disctionary
-    Public Function Dictionary(ByVal Sql As String, ByVal KeyField As String, ByVal ValueField As String) As Dictionary(Of Object, Object)
-        Dim Source As DataTable = Me.Table(Sql)
-        Return SCFramework.Utils.DataTable.ToDictionary(Source, KeyField, ValueField)
-    End Function
-
-    ' Execute a sql command and put the result inside a arraylist
-    Public Function Array(ByVal Sql As String, Optional ByVal Field As String = Nothing) As Object()
-        ' Get the source
-        Dim Source As DataTable = Me.Table(Sql)
-
-        ' If field if nothing fill the array list with the first column available
-        If Field Is Nothing AndAlso Source.Columns.Count > 0 Then
-            Field = Source.Columns(0).ColumnName
-        End If
-
-        ' Return the array list
-        Return SCFramework.Utils.DataTable.ToArray(Source, Field)
     End Function
 
     ' Create a generic adapter

@@ -69,7 +69,9 @@ Public Class Page
             Dim Language As String = Trim("" & Bridge.Page.Request.QueryString(Languages.QUERYSTRING_TAG))
             If Not String.IsNullOrEmpty(Language) Then
                 ' Set the current language
-                Languages.Instance.Current = Language
+                ' TODO: create a static languages manager
+                Dim LanguageManager As SCFramework.Languages = New SCFramework.Languages()
+                LanguageManager.Current = Language
             End If
 
         Catch ex As Exception
@@ -156,7 +158,9 @@ Public Class Page
         If String.IsNullOrEmpty(Password.Trim) Then Result = LoginResult.EmptyPassword
 
         ' Get the user by alias and password
-        Dim User As SCFramework.User = SCFramework.Users.Instance.GetUser(Trim([Alias]), Trim(Password))
+        ' TODO: create a static users manager
+        Dim UsersManager As SCFramework.Users = New SCFramework.Users()
+        Dim User As SCFramework.User = UsersManager.GetUser(Trim([Alias]), Trim(Password))
 
         ' Check the access
         If User Is Nothing OrElse Not User.IsAutenticated Then
@@ -192,7 +196,7 @@ Public Class Page
 
         ' Update the last access
         User.LastAccess = Now
-        SCFramework.Users.Instance.Save(User)
+        UsersManager.Save(User)
 
         ' Trace it and return
         Me.TraceAction("Login", Result <> LoginResult.Success, [Alias], Password)
@@ -204,13 +208,13 @@ Public Class Page
         Me.CurrentUser = New SCFramework.User()
 
         ' Ritorna alla pagina base
-        Me.Response.Redirect("~/" & Configuration.Instance.BasePage)
+        Me.Response.Redirect("~/" & Bridge.Configuration.BasePage)
     End Sub
 
     Public Sub MustBeAutenticated(ByVal ParamArray Levels() As Integer)
         Me.MustBeAutenticated()
         If Array.IndexOf(Levels, Me.CurrentUser.Level) <> -1 Then
-            Me.Response.Redirect("~/" & Configuration.Instance.BasePage)
+            Me.Response.Redirect("~/" & Bridge.Configuration.BasePage)
         End If
     End Sub
 
@@ -220,7 +224,7 @@ Public Class Page
 
     Public Sub MustBeAutenticated()
         If Not Me.CurrentUser.IsAutenticated Then
-            Me.Response.Redirect("~/" & Configuration.Instance.BasePage)
+            Me.Response.Redirect("~/" & Bridge.Configuration.BasePage)
         End If
     End Sub
 

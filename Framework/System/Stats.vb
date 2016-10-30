@@ -107,7 +107,10 @@ Public Class Stats
         Source.Columns.Add("MONTH_NAME", GetType(String))
 
         ' Apply the columns value
-        Dim Culture As Globalization.CultureInfo = Globalization.CultureInfo.CreateSpecificCulture(SCFramework.Languages.Instance.Current)
+        ' TODO: create a static languages manager
+        Dim LanguageManager As SCFramework.Languages = New SCFramework.Languages()
+        Dim Culture As Globalization.CultureInfo = Globalization.CultureInfo.CreateSpecificCulture(LanguageManager.Current)
+
         For Each Row As DataRow In Source.Rows
             ' Current day
             Dim Current As Date = CDate(Row!DAY)

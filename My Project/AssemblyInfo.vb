@@ -11,8 +11,8 @@ Imports System.Runtime.InteropServices
 <Assembly: AssemblyTitle("SCFramework")> 
 <Assembly: AssemblyDescription("")> 
 <Assembly: AssemblyCompany("Carassai Samuele")> 
-<Assembly: AssemblyProduct("SCFramework")> 
-<Assembly: AssemblyCopyright("Copyright © Samuele Carassai 2015")> 
+<Assembly: AssemblyProduct("SCFramework")>
+<Assembly: AssemblyCopyright("Copyright © Samuele Carassai 2016")>
 <Assembly: AssemblyTrademark("")> 
 
 <Assembly: ComVisible(False)>
@@ -32,22 +32,22 @@ Imports System.Runtime.InteropServices
 ' <Assembly: AssemblyVersion("1.0.*")> 
 
 <Assembly: AssemblyVersion("5.0.0.0")> 
-<Assembly: AssemblyFileVersion("5.0.0.0")> 
+<Assembly: AssemblyFileVersion("5.0.0.0")>
 
-<Assembly: TagPrefix("SCFramework.WebControls", "SCFramework")> 
+<Assembly: Web.UI.TagPrefix("SCFramework.WebControls", "SCFramework")>
 
 
 ' Resuorces
 
 ' Multi Languages Editor
-<Assembly: WebResource("SCFramework.MultiLanguagesEditor.css", "text/css", PerformSubstitution:=True)> 
-<Assembly: WebResource("SCFramework.MultiLanguagesEditor.js", "text/javascript")> 
+<Assembly: Web.UI.WebResource("SCFramework.MultiLanguagesEditor.css", "text/css", PerformSubstitution:=True)>
+<Assembly: Web.UI.WebResource("SCFramework.MultiLanguagesEditor.js", "text/javascript")>
 
 ' Files Manager
-<Assembly: WebResource("SCFramework.FilesManager.css", "text/css", PerformSubstitution:=True)> 
-<Assembly: WebResource("SCFramework.FilesManager.js", "text/javascript")> 
+<Assembly: Web.UI.WebResource("SCFramework.FilesManager.css", "text/css", PerformSubstitution:=True)>
+<Assembly: Web.UI.WebResource("SCFramework.FilesManager.js", "text/javascript")>
 
 ' Single File Manager
-<Assembly: WebResource("SCFramework.SingleFileManager.css", "text/css", PerformSubstitution:=True)> 
-<Assembly: WebResource("SCFramework.SingleFileManager.js", "text/javascript")> 
+<Assembly: Web.UI.WebResource("SCFramework.SingleFileManager.css", "text/css", PerformSubstitution:=True)>
+<Assembly: Web.UI.WebResource("SCFramework.SingleFileManager.js", "text/javascript")>
 

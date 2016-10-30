@@ -58,7 +58,7 @@ Public Class Tracer
 
     ' Delete the trace log filtered by the type.
     Public Overloads Function Delete(ActionFilter As Tracer.Actions) As Long
-        Return Me.Delete(New SCFramework.DbClauses("TYPE", ActionFilter))
+        Return Me.Delete(SCFramework.DbClauses.FromPair("TYPE", ActionFilter))
     End Function
 
 #End Region

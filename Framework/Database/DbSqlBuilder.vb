@@ -21,28 +21,6 @@ Public Class DbSqlBuilder
     Public Const QuotePrefix As String = "["
     Public Const QuoteSuffix As String = "]"
 
-#Region " PRIVATE "
-
-    ' Get the value pass by generic web control
-    Private Shared Function GetValue(ByVal [Control] As WebControl) As String
-        If Not ([Control] Is Nothing) Then
-            If TypeOf [Control] Is ListControl Then
-                Return CType([Control], ListControl).SelectedValue
-            Else
-                Select Case [Control].GetType.Name
-                    Case "TextBox" : Return CType([Control], TextBox).Text
-                    Case "Label" : Return CType([Control], Label).Text
-                    Case "CheckBox" : Return CType([Control], CheckBox).Checked.ToString()
-                    Case "RadioButton" : Return CType([Control], RadioButton).Checked.ToString()
-                    Case "RadioButtonList" : Return CType([Control], RadioButtonList).SelectedValue
-                End Select
-            End If
-        End If
-        Return Nothing
-    End Function
-
-#End Region
-
 #Region " DATA TO STRING "
 
     ' Format a generic object
@@ -89,12 +67,6 @@ Public Class DbSqlBuilder
         Return String.Empty
     End Function
 
-    Public Shared Function [String](ByVal [Control] As WebControl,
-                                    Optional ByVal EmptyIsNULL As Boolean = True,
-                                    Optional ByVal Provider As DbQuery.ProvidersList = DbQuery.ProvidersList.Undefined) As String
-        Return [String](GetValue([Control]), EmptyIsNULL, Provider)
-    End Function
-
 
     ' Format a number
     Public Shared Function Numeric(ByVal Value As Object) As String
@@ -120,10 +92,6 @@ Public Class DbSqlBuilder
             ' Else
             Return "NULL"
         End Try
-    End Function
-
-    Public Shared Function Numeric(ByVal [Control] As WebControl) As String
-        Return Numeric(GetValue([Control]))
     End Function
 
 
@@ -183,12 +151,6 @@ Public Class DbSqlBuilder
         End Try
     End Function
 
-    Public Shared Function [Date](ByVal [Control] As WebControl,
-                                  Optional ByVal Complete As Boolean = False,
-                                  Optional ByVal Provider As DbQuery.ProvidersList = DbQuery.ProvidersList.Undefined) As String
-        Return [Date](GetValue([Control]), Complete, Provider)
-    End Function
-
 
     ' Format a boolean
     Public Shared Function [Boolean](ByVal Value As Object,
@@ -207,11 +169,6 @@ Public Class DbSqlBuilder
             Case DbQuery.ProvidersList.SqlClient : Return IIf(CBool(Value), "1", "0")
             Case Else : Return "NULL"
         End Select
-    End Function
-
-    Public Shared Function [Boolean](ByVal [Control] As WebControl,
-                                     Optional ByVal Provider As DbQuery.ProvidersList = DbQuery.ProvidersList.Undefined) As String
-        Return [Boolean](GetValue([Control]), Provider)
     End Function
 
 
@@ -321,7 +278,7 @@ Public Class DbSqlBuilder
 #Region " BUILDER "
 
     ' Build a generic select sql command
-    Public Shared Function BuildSelectCommand(TableName As String, Fields As IList(Of String), Clauses As DbClauses) As String
+    Public Shared Function SelectCommand(TableName As String, Fields As IList(Of String), Clauses As DbClauses) As String
         ' Build the value list
         Dim FieldList As String = String.Empty
         For Each Field As String In Fields
@@ -345,7 +302,7 @@ Public Class DbSqlBuilder
     End Function
 
     ' Build a generic insert sql command
-    Public Shared Function BuildInsertCommand(TableName As String, Values As IDictionary(Of String, Object)) As String
+    Public Shared Function InsertCommand(TableName As String, Values As IDictionary(Of String, Object)) As String
         ' Strings builder
         Dim FieldList As String = String.Empty
         Dim ValueList As String = String.Empty
@@ -368,7 +325,7 @@ Public Class DbSqlBuilder
     End Function
 
     ' Build a generic update sql command
-    Public Shared Function BuildUpdateCommand(TableName As String, Values As IDictionary(Of String, Object), Clauses As DbClauses) As String
+    Public Shared Function UpdateCommand(TableName As String, Values As IDictionary(Of String, Object), Clauses As DbClauses) As String
         ' Build the value list
         Dim ValuesList As String = String.Empty
         For Each Key As String In Values.Keys
@@ -396,7 +353,7 @@ Public Class DbSqlBuilder
     End Function
 
     ' Generic delete command
-    Public Shared Function BuildDeleteCommand(TableName As String, Clauses As DbClauses) As String
+    Public Shared Function DeleteCommand(TableName As String, Clauses As DbClauses) As String
         ' Build the sql command
         Dim Sql As String = String.Format("DELETE FROM {0} ", DbSqlBuilder.Quote(TableName))
 
