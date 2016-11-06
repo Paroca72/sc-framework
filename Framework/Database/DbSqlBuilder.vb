@@ -9,7 +9,9 @@
 ' Created 17/09/2015
 ' Updated 15/10/2016
 '
-' Integrazione: OleDb, Sql
+' Support databases: OleDb, Sql
+'
+' TODO: Implement the join function
 '
 '*************************************************************************************************
 

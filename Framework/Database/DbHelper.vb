@@ -111,10 +111,8 @@ Public MustInherit Class DbHelper
     Protected Function ToClauses(Value As Long) As SCFramework.DbClauses
         ' Check if have at least one primary key
         If Me.mPrimaryKeysColumns.Count > 0 Then
-            ' Define the clases
-            Dim Clauses As SCFramework.DbClauses = SCFramework.DbClauses.Empty
-            Clauses.Add(Me.mPrimaryKeysColumns(0), Value)
-            Return Clauses
+            ' Define the clauses
+            Return New DbClauses(Me.mPrimaryKeysColumns(0), DbClauses.ComparerType.Equal, Value)
 
         Else
             ' Else return

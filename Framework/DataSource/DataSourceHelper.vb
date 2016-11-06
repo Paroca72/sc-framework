@@ -137,14 +137,13 @@ Public MustInherit Class DataSourceHelper
         ' Check for static concurrent access safe is active
         If Me.mStaticConcurrentAccessSafeMode And Me.mSessionID IsNot Nothing Then
             ' Create the session clauses
-            Dim SessionClauses As SCFramework.DbClauses = SCFramework.DbClauses.Empty
-            SessionClauses.Add(DataSourceHelper.CONCURRENTACCESS_COLUMNNAME, DbClauses.ComparerType.Equal, Nothing)
-            SessionClauses.Add(DataSourceHelper.CONCURRENTACCESS_COLUMNNAME, DbClauses.ComparerType.Equal, Bridge.Session.SessionID, False)
+            Dim SessionClauses As DbClauses = New DbClauses(DataSourceHelper.CONCURRENTACCESS_COLUMNNAME, DbClauses.ComparerType.Equal, Nothing) _
+                .Or(DataSourceHelper.CONCURRENTACCESS_COLUMNNAME, DbClauses.ComparerType.Equal, Bridge.Session.SessionID)
 
             ' Adjust
-            Dim AdjustedClauses As SCFramework.DbClauses = SCFramework.DbClauses.Empty
-            AdjustedClauses.Add(Clauses)
-            AdjustedClauses.Add(SessionClauses)
+            Dim AdjustedClauses As SCFramework.DbClauses = DbClauses.Empty _
+                .And(Clauses) _
+                .And(SessionClauses)
 
             ' Return
             Return AdjustedClauses
@@ -355,7 +354,8 @@ Public MustInherit Class DataSourceHelper
                 ' Cycle rows and for each row to delete extract the pairs key
                 For Each Row As DataRow In Source.Rows
                     ' Exctract the current primary keys and delete the items inside the subordinate
-                    Subordinate.Delete(SCFramework.DbClauses.FromRange(Me.ExtractLocalKeysPairs(Row)))
+                    Dim CurrentClauses As DbClauses = DbClauses.Empty.And(Me.ExtractLocalKeysPairs(Row), DbClauses.ComparerType.Equal)
+                    Subordinate.Delete(CurrentClauses)
                 Next
             Next
 

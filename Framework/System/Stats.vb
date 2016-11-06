@@ -78,11 +78,8 @@ Public Class Stats
 
     ' Get source filtered by date
     Private Function GetFilteredSource([Date] As Date) As DataTable
-        ' Create the clauses
-        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
-        Clauses.Add("DAY", SCFramework.DbClauses.ComparerType.MinorOrEqual, [Date])
-
-        Return Me.GetSource()
+        ' Create the clauses and filter
+        Return Me.GetSource(New SCFramework.DbClauses("DAY", SCFramework.DbClauses.ComparerType.MinorOrEqual, [Date]))
     End Function
 
 #End Region
@@ -153,10 +150,10 @@ Public Class Stats
         If Day = Date.MinValue Then Day = Date.Today
 
         ' Create the clauses for a single day
-        Dim Clauses As SCFramework.DbClauses = SCFramework.DbClauses.Empty
-        Clauses.Add("YEAR_NUMBER", SCFramework.DbClauses.ComparerType.Equal, Day.Year)
-        Clauses.Add("MONTH_NUMBER", SCFramework.DbClauses.ComparerType.Equal, Day.Month)
-        Clauses.Add("DAY_NUMBER", SCFramework.DbClauses.ComparerType.Equal, Day.Day)
+        Dim Clauses As DbClauses = DbClauses.Empty _
+            .And("YEAR_NUMBER", SCFramework.DbClauses.ComparerType.Equal, Day.Year) _
+            .and("MONTH_NUMBER", SCFramework.DbClauses.ComparerType.Equal, Day.Month) _
+            .and("DAY_NUMBER", SCFramework.DbClauses.ComparerType.Equal, Day.Day)
 
         ' Get the data source and check if exists
         Dim Today As DataRow = Me.GetSource(Clauses).AsEnumerable().FirstOrDefault

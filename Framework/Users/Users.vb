@@ -61,7 +61,7 @@ Public Class Users
         ' Create the sql builder
         Dim SqlBuilder As DbSqlBuilder = New DbSqlBuilder() _
             .Table(Me.GetTableName()) _
-            .Where(DbClauses.FromPair("EMAIL", EMail))
+            .Where(New DbClauses("EMAIL", DbClauses.ComparerType.Equal, EMail))
 
         ' If have one or more rows return the first else null
         Dim Source As DataTable = Bridge.Query.Table(SqlBuilder.SelectCommand, Me.GetTableName())
@@ -71,9 +71,8 @@ Public Class Users
     ' Get a user details filtered by login and password
     Public Function GetUser(Login As String, Password As String) As User
         ' Create the clausole
-        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
-        Clauses.Add("LOGIN", Login)
-        Clauses.Add("PASSWORD", Password)
+        Dim Clauses As DbClauses = New DbClauses("LOGIN", DbClauses.ComparerType.Equal, Login) _
+            .And("PASSWORD", DbClauses.ComparerType.Equal, Password)
 
         ' Create the sql builder
         Dim SqlBuilder As DbSqlBuilder = New DbSqlBuilder() _
@@ -87,14 +86,10 @@ Public Class Users
 
     ' Get all users list but exclude the root
     Public Function GetUsers() As User()
-        ' Create the clause for levels by cycle all
-        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
-        Clauses.Add("LOGIN", SCFramework.DbClauses.ComparerType.Different, SCFramework.User.ROOT_PREFIX, False)
-
         ' Create the sql builder
         Dim SqlBuilder As DbSqlBuilder = New DbSqlBuilder() _
             .Table(Me.GetTableName()) _
-            .Where(Clauses)
+            .Where(New DbClauses("LOGIN", SCFramework.DbClauses.ComparerType.Different, SCFramework.User.ROOT_PREFIX))
 
         ' Return the users list
         Dim Source As DataTable = Bridge.Query.Table(SqlBuilder.SelectCommand, Me.GetTableName())
@@ -104,10 +99,10 @@ Public Class Users
     ' Get the users list filtered by level
     Public Function GetUsers(ByVal ParamArray Levels() As Short) As User()
         ' Create the clause for levels by cycle all
-        Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
+        Dim Clauses As DbClauses = DbClauses.Empty
         For Each Level As Short In Levels
             ' Add the condition
-            Clauses.Add("LEVEL", SCFramework.DbClauses.ComparerType.Equal, Level, False)
+            Clauses.Or("LEVEL", SCFramework.DbClauses.ComparerType.Equal, Level)
         Next
 
         ' Create the sql builder
@@ -125,7 +120,7 @@ Public Class Users
         ' Create the sql builder
         Dim SqlBuilder As DbSqlBuilder = New DbSqlBuilder() _
             .Table(Me.GetTableName()) _
-            .Where(DbClauses.FromPair("LOGIN", Login))
+            .Where(New DbClauses("LOGIN", DbClauses.ComparerType.Equal, Login))
 
         ' If have one or more rows return the first else null
         Dim Source As DataTable = Bridge.Query.Table(SqlBuilder.SelectCommand, Me.GetTableName())
@@ -137,7 +132,7 @@ Public Class Users
         ' Create the sql builder
         Dim SqlBuilder As DbSqlBuilder = New DbSqlBuilder() _
             .Table(Me.GetTableName()) _
-            .Where(DbClauses.FromPair("EMAIL", EMail))
+            .Where(New DbClauses("EMAIL", DbClauses.ComparerType.Equal, EMail))
 
         ' If have one or more rows return the first else null
         Dim Source As DataTable = Bridge.Query.Table(SqlBuilder.SelectCommand, Me.GetTableName())
