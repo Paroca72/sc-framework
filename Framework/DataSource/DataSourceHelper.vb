@@ -25,8 +25,6 @@ Public MustInherit Class DataSourceHelper
     Private mSubordinates As List(Of DataSourceHelper) = Nothing
     Private mLastClauses As SCFramework.DbClauses = Nothing
 
-    Private mHasChanges As Boolean = False
-
     Private mStaticConcurrentAccessSafeMode = False
     Private mSessionID As String = Nothing
 
@@ -158,21 +156,33 @@ Public MustInherit Class DataSourceHelper
     End Function
 
     ' Get the data source holded in memory
-    Private Function SelectDataSource(Clauses As SCFramework.DbClauses)
+    Private Function SelectDataSource(Clauses As SCFramework.DbClauses) As DataTable
         ' If the cluases not changed return the keep in memory source
         If Not Me.ClausesIsChanged(Clauses) And Not Me.mStaticConcurrentAccessSafeMode Then
             Return Me.mDataSource
 
         Else
-            ' Filter the source with the new clauses
-            Return Me.mDataSource.AsEnumerable().Select(Me.AdjustClauses(Clauses).ForFilter)
+            ' Get the source and check for empty values
+            If Me.mDataSource IsNot Nothing Then
+                ' Filter the source with the new clauses
+                Return Me.mDataSource.AsEnumerable() _
+                    .Select(Me.AdjustClauses(Clauses).ForFilter)
+            End If
         End If
+
+        ' Nohting
+        Return Nothing
     End Function
 
     ' Create a new data source
     Private Function CreateNewDataSource(Clauses As SCFramework.DbClauses)
+        ' Create the sql builder
+        Dim SqlBuilder As DbSqlBuilder = New DbSqlBuilder() _
+            .Table(Me.GetTableName()) _
+            .Where(Clauses)
+
         ' I must create a new datasource with the proper columns settings
-        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
+        Dim Source As DataTable = Bridge.Query.Table(SqlBuilder.SelectCommand, Me.GetTableName())
         Source.CaseSensitive = False
         Source.Locale = CultureInfo.InvariantCulture
 
@@ -285,14 +295,19 @@ Public MustInherit Class DataSourceHelper
     ' True if has changes
     Public ReadOnly Property HasChanges() As Boolean
         Get
-            Return Me.mHasChanges
+            ' Create a temp dataset
+            Dim DS As DataSet = New DataSet()
+            DS.Tables.Add(Me.mDataSource)
+
+            ' Check
+            Return DS.HasChanges
         End Get
     End Property
 
     ' Return the if memory managed
     Public ReadOnly Property IsMemoryManaged() As Boolean
         Get
-            Return Me.mDataSource Is Nothing
+            Return Me.mDataSource IsNot Nothing
         End Get
     End Property
 
@@ -355,7 +370,6 @@ Public MustInherit Class DataSourceHelper
             End SyncLock
 
             ' If if not memory managed update the database
-            Me.mHasChanges = Me.mHasChanges Or Source.Rows.Count > 0
             If Not Me.IsMemoryManaged Then
                 Me.UpdateDatabase(Source)
             End If
@@ -371,7 +385,7 @@ Public MustInherit Class DataSourceHelper
     End Function
 
     ' Insert command
-    Public Overrides Function Insert(Values As IDictionary(Of String, Object)) As Long
+    Public Overrides Function Insert(Values As Dictionary(Of String, Object)) As Long
         ' Get the filtered table and create the new record
         Dim Source As DataTable = Me.GetSource(SCFramework.DbClauses.AlwaysFalse)
         Dim NewRow As DataRow = Me.mDataSource.NewRow
@@ -390,7 +404,6 @@ Public MustInherit Class DataSourceHelper
 
             ' Insert the new ID
             Me.mDataSource.Rows.Add(NewRow)
-            Me.mHasChanges = True
 
             ' If if not memory managed update the database
             If Not Me.IsMemoryManaged Then
@@ -444,7 +457,6 @@ Public MustInherit Class DataSourceHelper
             End SyncLock
 
             ' If if not memory managed update the database
-            Me.mHasChanges = Me.mHasChanges Or Source.Rows.Count > 0
             If Not Me.IsMemoryManaged Then
                 Me.UpdateDatabase(Source)
             End If
@@ -484,7 +496,6 @@ Public MustInherit Class DataSourceHelper
             End SyncLock
 
             ' Commit the transaction is needed
-            Me.mHasChanges = False
             If TransactionOwner Then Query.CommitTransaction()
 
         Catch ex As Exception
@@ -507,13 +518,11 @@ Public MustInherit Class DataSourceHelper
 
         ' Reject the source changes
         Me.mDataSource.RejectChanges()
-        Me.mHasChanges = False
     End Sub
 
     ' Force to reload data source using the last clauses at the next source access
     Public Overridable Sub CleanDataSouce()
         Me.mDataSource = Nothing
-        Me.mHasChanges = False
     End Sub
 
 #End Region

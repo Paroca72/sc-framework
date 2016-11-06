@@ -129,7 +129,7 @@ Public Class Files
 #Region " PUBLIC "
 
     ' Insert command
-    Public Overrides Function Insert(Values As IDictionary(Of String, Object)) As Long
+    Public Overrides Function Insert(Values As Dictionary(Of String, Object)) As Long
         ' Check the fields and call the base
         Me.CheckPathFields(Values)
         MyBase.Insert(Values)

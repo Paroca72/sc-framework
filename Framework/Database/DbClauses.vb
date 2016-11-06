@@ -191,11 +191,15 @@ Public Class DbClauses
                     Filter &= IIf(Clause.GroupAsAnd, " AND ", " OR ")
                 End If
 
-                ' Append the new clause. If must create sql for filter force the provider to OldDb.
+                ' If requested create sql for filter force the provider to OldDb.
                 Dim Provider As DbQuery.ProvidersList = IIf(ForFilter, DbQuery.ProvidersList.OleDb, DbQuery.ProvidersList.Undefined)
+                Dim SqlBuilder As DbSqlBuilder = New DbSqlBuilder(Provider)
+
+                ' Append the new clause. 
                 Filter &= String.Format("{0} {1} {2}",
-                                        DbSqlBuilder.Quote(Clause.Column), ComparerToString,
-                                        DbSqlBuilder.Variant(Clause.Value, Provider))
+                                        DbSqlBuilder.Quote(Clause.Column),
+                                        ComparerToString,
+                                        SqlBuilder.Variant(Clause.Value))
             End If
         Next
 

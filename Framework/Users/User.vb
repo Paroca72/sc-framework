@@ -525,64 +525,64 @@ Public Class User
 #Region " PUBLIC "
 
     ' Convert the struture in an key/value pair hashtable
-    Public Function ToHashTable() As Hashtable
+    Public Function ToDictionary() As Dictionary(Of String, Object)
         ' Create the container
-        Dim HT As Hashtable = New Hashtable()
+        Dim List As Dictionary(Of String, Object) = New Dictionary(Of String, Object)()
 
         ' Fill
-        HT.Add("ID_USER", Me.mID)
-        HT.Add("ID_GROUP", Me.mGroup)
+        List.Add("ID_USER", Me.mID)
+        List.Add("ID_GROUP", Me.mGroup)
 
-        HT.Add("EXTRANUMBER", Me.mExtraNumber)
-        HT.Add("EXTRASTRING", Me.mExtraString)
+        List.Add("EXTRANUMBER", Me.mExtraNumber)
+        List.Add("EXTRASTRING", Me.mExtraString)
 
-        HT.Add("LOGIN", Me.mLogin)
-        HT.Add("LEVEL", Me.mLevel)
-        HT.Add("ACTIVE", Me.mActive)
-        HT.Add("SIGNUP", Me.mSignup)
-        HT.Add("LAST_ACCESS", Me.mLastAccess)
-        HT.Add("ID_PRICELIST", Me.mPriceList)
-        HT.Add("LANGUAGE", Me.mLanguage)
-        HT.Add("CORPORATE", Me.mCorporate)
-        HT.Add("EMAIL", Me.mEMail)
-        HT.Add("SKYPE", Me.mSkype)
-        HT.Add("FACEBOOK", Me.mFacebook)
-        HT.Add("TWITTER", Me.mTwitter)
-        HT.Add("URL", Me.mURL)
-        HT.Add("PHONE", Me.mPhone)
-        HT.Add("FAX", Me.mFax)
-        HT.Add("INFO", Me.mInfo)
-        HT.Add("VAT", Me.mVAT)
-        HT.Add("FISCAL_CODE", Me.mFiscalCode)
-        HT.Add("ERP_CODE", Me.mErpCode)
-        HT.Add("LOGO", Me.mLogo)
-        HT.Add("BIRTH_DATE", Me.mBirthDate)
-        HT.Add("GENDER", Me.mGender)
+        List.Add("LOGIN", Me.mLogin)
+        List.Add("LEVEL", Me.mLevel)
+        List.Add("ACTIVE", Me.mActive)
+        List.Add("SIGNUP", Me.mSignup)
+        List.Add("LAST_ACCESS", Me.mLastAccess)
+        List.Add("ID_PRICELIST", Me.mPriceList)
+        List.Add("LANGUAGE", Me.mLanguage)
+        List.Add("CORPORATE", Me.mCorporate)
+        List.Add("EMAIL", Me.mEMail)
+        List.Add("SKYPE", Me.mSkype)
+        List.Add("FACEBOOK", Me.mFacebook)
+        List.Add("TWITTER", Me.mTwitter)
+        List.Add("URL", Me.mURL)
+        List.Add("PHONE", Me.mPhone)
+        List.Add("FAX", Me.mFax)
+        List.Add("INFO", Me.mInfo)
+        List.Add("VAT", Me.mVAT)
+        List.Add("FISCAL_CODE", Me.mFiscalCode)
+        List.Add("ERP_CODE", Me.mErpCode)
+        List.Add("LOGO", Me.mLogo)
+        List.Add("BIRTH_DATE", Me.mBirthDate)
+        List.Add("GENDER", Me.mGender)
 
         ' Password
-        HT.Add("PASSWORD", Crypt.MD5.Encrypt(Password, User.CRYPT_KEY))
+        List.Add("PASSWORD", Crypt.MD5.Encrypt(Password, User.CRYPT_KEY))
 
         ' Spedition Address
-        HT.Add("SPEDITION_HEADER", Me.mSpeditionHeader)
-        HT.Add("SEND_FIRSTNAME", Me.mSendingAddress.FirstName)
-        HT.Add("SEND_LASTNAME", Me.mSendingAddress.LastName)
-        HT.Add("SEND_ADDRESS", Me.mSendingAddress.Address)
-        HT.Add("SEND_CITY", Me.mSendingAddress.City)
-        HT.Add("SEND_PROVINCE", Me.mSendingAddress.Province)
-        HT.Add("SEND_POSTALCODE", Me.mSendingAddress.PostalCode)
-        HT.Add("SEND_COUNTRY", Me.mSendingAddress.Country)
+        List.Add("SPEDITION_HEADER", Me.mSpeditionHeader)
+        List.Add("SEND_FIRSTNAME", Me.mSendingAddress.FirstName)
+        List.Add("SEND_LASTNAME", Me.mSendingAddress.LastName)
+        List.Add("SEND_ADDRESS", Me.mSendingAddress.Address)
+        List.Add("SEND_CITY", Me.mSendingAddress.City)
+        List.Add("SEND_PROVINCE", Me.mSendingAddress.Province)
+        List.Add("SEND_POSTALCODE", Me.mSendingAddress.PostalCode)
+        List.Add("SEND_COUNTRY", Me.mSendingAddress.Country)
 
         ' Billing Address
-        HT.Add("BILL_FIRSTNAME", Me.mBillingAddress.FirstName)
-        HT.Add("BILL_LASTNAME", Me.mBillingAddress.LastName)
-        HT.Add("BILL_ADDRESS", Me.mBillingAddress.Address)
-        HT.Add("BILL_CITY", Me.mBillingAddress.City)
-        HT.Add("BILL_PROVINCE", Me.mBillingAddress.Province)
-        HT.Add("BILL_POSTALCODE", Me.mBillingAddress.PostalCode)
-        HT.Add("BILL_COUNTRY", Me.mBillingAddress.Country)
+        List.Add("BILL_FIRSTNAME", Me.mBillingAddress.FirstName)
+        List.Add("BILL_LASTNAME", Me.mBillingAddress.LastName)
+        List.Add("BILL_ADDRESS", Me.mBillingAddress.Address)
+        List.Add("BILL_CITY", Me.mBillingAddress.City)
+        List.Add("BILL_PROVINCE", Me.mBillingAddress.Province)
+        List.Add("BILL_POSTALCODE", Me.mBillingAddress.PostalCode)
+        List.Add("BILL_COUNTRY", Me.mBillingAddress.Country)
 
         ' Return
-        Return HT
+        Return List
     End Function
 
 #End Region

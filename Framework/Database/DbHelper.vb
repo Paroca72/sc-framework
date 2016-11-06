@@ -69,7 +69,10 @@ Public MustInherit Class DbHelper
     ' Sql analisys
     Private Sub SqlAnalisys(Connection As DbConnection)
         ' Define the request for a specific table
-        Dim Sql As String = DbSqlBuilder.SelectCommand(Me.GetTableName(), Nothing, Nothing)
+        Dim Sql As String = New DbSqlBuilder() _
+            .Table(Me.GetTableName()) _
+            .Where(DbClauses.AlwaysFalse) _
+            .SelectCommand
 
         ' Find the reader
         Dim Command As SqlCommand = New SqlCommand(Sql, Connection)
@@ -94,20 +97,10 @@ Public MustInherit Class DbHelper
     End Sub
 
     ' Extract only the writable columns
-    Private Function FilterForWritableColumns(Source As Hashtable) As Hashtable
-        ' Holder
-        Dim HT As Hashtable = New Hashtable()
-
-        ' Cycle all keys
-        For Each Key As String In Source.Keys
-            ' Check if writable
-            If Me.mWritableColumns.Contains(Key) Then
-                HT.Add(Key, Source(Key))
-            End If
-        Next
-
-        ' Return
-        Return HT
+    Private Function FilterForWritableColumns(Source As Dictionary(Of String, Object)) As Dictionary(Of String, Object)
+        ' Filters
+        Return (From Pair In Source Where Me.mWritableColumns.Contains(Pair.Key) Select Pair) _
+            .ToDictionary(Of String, Object)(Function(Pair) Pair.Key, Function(Pair) Pair.Value)
     End Function
 
 #End Region
@@ -238,7 +231,7 @@ Public MustInherit Class DbHelper
     End Function
 
     ' Insert command
-    Public Overridable Function Insert(Values As IDictionary(Of String, Object)) As Long
+    Public Overridable Function Insert(Values As Dictionary(Of String, Object)) As Long
         Return Me.Query.Insert(Me.GetTableName(), Me.FilterForWritableColumns(Values))
     End Function
 

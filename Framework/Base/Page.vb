@@ -33,25 +33,25 @@ Public Class Page
 
     Public Sub TraceAction(ByVal Type As String, ByVal Success As Boolean, _
                             Optional ByVal [Alias] As String = Nothing, Optional ByVal Password As String = Nothing)
-        Dim Referrer As String = Bridge.Request.UserHostAddress
-        Dim SQL As String = "INSERT INTO [SYS_LOGTRACER] (" & _
-                                "[TYPE], [RESULT], [ALIAS], [PASSWORD], [REFERRER]" & _
-                            ") VALUES (" & _
-                                DbSqlBuilder.String(Type) & ", " & _
-                                DbSqlBuilder.Boolean(Success) & ", " & _
-                                DbSqlBuilder.String([Alias]) & ", " & _
-                                DbSqlBuilder.String(Password) & ", " & _
-                                DbSqlBuilder.String(Referrer) & _
-                            ")"
-        Try
-            Me.Query.Exec(SQL)
-        Catch ex As Exception
-            If TypeOf Bridge.Page Is Page Then
-                Me.ShowJavaMessage(ex.Message)
-            Else
-                Throw New Exception(ex.Message)
-            End If
-        End Try
+        'Dim Referrer As String = Bridge.Request.UserHostAddress
+        'Dim SQL As String = "INSERT INTO [SYS_LOGTRACER] (" & _
+        '                        "[TYPE], [RESULT], [ALIAS], [PASSWORD], [REFERRER]" & _
+        '                    ") VALUES (" & _
+        '                        DbSqlBuilder.String(Type) & ", " & _
+        '                        DbSqlBuilder.Boolean(Success) & ", " & _
+        '                        DbSqlBuilder.String([Alias]) & ", " & _
+        '                        DbSqlBuilder.String(Password) & ", " & _
+        '                        DbSqlBuilder.String(Referrer) & _
+        '                    ")"
+        'Try
+        '    Me.Query.Exec(SQL)
+        'Catch ex As Exception
+        '    If TypeOf Bridge.Page Is Page Then
+        '        Me.ShowJavaMessage(ex.Message)
+        '    Else
+        '        Throw New Exception(ex.Message)
+        '    End If
+        'End Try
     End Sub
 
     Private Sub AddLanguageMeta()

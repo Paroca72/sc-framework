@@ -14,17 +14,51 @@
 '*************************************************************************************************
 
 
-' Classe Adattatore
 Public Class DbSqlBuilder
 
     ' Constants
-    Public Const QuotePrefix As String = "["
-    Public Const QuoteSuffix As String = "]"
+    Public Const QUOTE_PREFIX As String = "["
+    Public Const QUOTE_SUFFIX As String = "]"
+
+    ' Holder
+    Private mProvider As DbQuery.ProvidersList = DbQuery.ProvidersList.Undefined
+
+    Private mForceQuote As Boolean = True
+    Private mStringEmptyIsNULL As Boolean = True
+    Private mDateMinIsNULL As Boolean = True
+    Private mDataBaseCulture As Globalization.CultureInfo = Nothing
+
+    Private mTableName As String = Nothing
+    Private mSelectFields As String = Nothing
+    Private mInsertValues As String = Nothing
+    Private mUpdateValues As String = Nothing
+    Private mWhereClauses As String = Nothing
+    Private mOrderFields As String = Nothing
+
+
+#Region " CONSTRUCTOR "
+
+    Sub New()
+        Me.New(Bridge.Query.GetProvider())
+    End Sub
+
+    Sub New(Provider As DbQuery.ProvidersList)
+        Me.mProvider = Provider
+        Me.mDataBaseCulture = CultureInfo.InvariantCulture
+    End Sub
+
+#End Region
+
+#Region " PROPERTIES "
+
+    ' TODO: all properties
+
+#End Region
 
 #Region " DATA TO STRING "
 
     ' Format a generic object
-    Public Shared Function [Variant](ByVal Value As Object, Optional ByVal Provider As DbQuery.ProvidersList = DbQuery.ProvidersList.Undefined) As String
+    Public Function [Variant](ByVal Value As Object) As String
         ' Check for null value
         If Value Is Nothing OrElse IsDBNull(Value) Then
             Return "NULL"
@@ -32,9 +66,9 @@ Public Class DbSqlBuilder
 
         ' Return the value by the case
         Select Case LCase(Value.GetType.Name)
-            Case "date", "datetime" : Return [Date](Value, True, Provider)
-            Case "boolean" : Return [Boolean](Value, Provider)
-            Case "string" : Return [String](Value, False, Provider)
+            Case "date", "datetime" : Return [Date](Value, True)
+            Case "boolean" : Return [Boolean](Value)
+            Case "string" : Return [String](Value)
             Case "byte[]" : Return Binary(Value)
             Case Else : Return Numeric(Value)
         End Select
@@ -42,23 +76,18 @@ Public Class DbSqlBuilder
 
 
     ' Format a string
-    Public Shared Function [String](ByVal Value As Object,
-                                    Optional ByVal EmptyIsNULL As Boolean = True,
-                                    Optional ByVal Provider As DbQuery.ProvidersList = DbQuery.ProvidersList.Undefined) As String
+    Public Function [String](ByVal Value As Object) As String
         ' Check for return NULL
-        If Value Is Nothing OrElse IsDBNull(Value) Then Return "NULL"
-        If EmptyIsNULL AndAlso SCFramework.Utils.String.IsEmptyOrWhite(Value) Then Return "NULL"
-
-        ' Fix the provider
-        If Provider = DbQuery.ProvidersList.Undefined Then
-            Provider = Bridge.Query.GetProvider()
+        If Value Is Nothing OrElse IsDBNull(Value) OrElse
+            (Me.mStringEmptyIsNULL And CStr(Value).Trim = String.Empty) Then
+            Return "NULL"
         End If
 
         ' Fix the quote
         Value = CStr(Value).Replace("'", "''")
 
         ' Select the return value by provider type
-        Select Case Provider
+        Select Case Me.mProvider
             Case DbQuery.ProvidersList.OleDb : Return "'" & Value & "'"
             Case DbQuery.ProvidersList.SqlClient : Return "N'" & Value & "'"
         End Select
@@ -69,7 +98,7 @@ Public Class DbSqlBuilder
 
 
     ' Format a number
-    Public Shared Function Numeric(ByVal Value As Object) As String
+    Public Function Numeric(ByVal Value As Object) As String
         Try
             ' Check for null value
             If Value Is Nothing Or IsDBNull(Value) Then Throw New Exception()
@@ -85,7 +114,7 @@ Public Class DbSqlBuilder
                ((TypeOf Value Is Short) Or (TypeOf Value Is UShort)) Then
                 Return CLng(Value).ToString
             Else
-                Return CDbl(Value).ToString(CultureInfo.InvariantCulture)
+                Return CDbl(Value).ToString(Me.mDataBaseCulture)
             End If
 
         Catch ex As Exception
@@ -96,16 +125,12 @@ Public Class DbSqlBuilder
 
 
     ' Format a date
-    Public Shared Function [Date](ByVal Value As Object,
-                                  Optional ByVal Complete As Boolean = False,
-                                  Optional ByVal Provider As DbQuery.ProvidersList = DbQuery.ProvidersList.Undefined) As String
+    Public Function [Date](ByVal Value As Object,
+                           Optional ByVal Complete As Boolean = False) As String
         Try
-            ' Get the current culture code
-            Dim Culture As CultureInfo = Global.System.Threading.Thread.CurrentThread.CurrentUICulture
-
             ' If the passed value is a string try to parse to a date using the current culture
             If TypeOf Value Is String Then
-                Value = Date.Parse(Value, Culture)
+                Value = Date.Parse(Value, Global.System.Threading.Thread.CurrentThread.CurrentUICulture)
             End If
 
             ' Check for null value
@@ -114,20 +139,15 @@ Public Class DbSqlBuilder
                 Throw New Exception
             End If
 
-            ' Fix the provider
-            If Provider = DbQuery.ProvidersList.Undefined Then
-                Provider = Bridge.Query.GetProvider()
-            End If
-
             ' Select the returned value by the provider type
-            Select Case Provider
+            Select Case Me.mProvider
                 Case DbQuery.ProvidersList.OleDb
                     If Complete Then
                         ' Long date format
-                        Return "#" & CDate(Value).ToString(CultureInfo.InvariantCulture) & "#"
+                        Return "#" & CDate(Value).ToString(Me.mDataBaseCulture) & "#"
                     Else
                         ' Short date format
-                        Return "#" & CDate(Value).ToString("d", CultureInfo.InvariantCulture) & "#"
+                        Return "#" & CDate(Value).ToString("d", Me.mDataBaseCulture) & "#"
                     End If
 
                 Case DbQuery.ProvidersList.SqlClient
@@ -153,43 +173,39 @@ Public Class DbSqlBuilder
 
 
     ' Format a boolean
-    Public Shared Function [Boolean](ByVal Value As Object,
-                                     Optional ByVal Provider As DbQuery.ProvidersList = DbQuery.ProvidersList.Undefined) As String
+    Public Function [Boolean](ByVal Value As Object) As String
         ' Check for null value
         If Value Is Nothing Or IsDBNull(Value) Then Return "NULL"
 
-        ' Fix the provider
-        If Provider = DbQuery.ProvidersList.Undefined Then
-            Provider = Bridge.Query.GetProvider()
-        End If
-
         ' Select the returned value by the provider type
-        Select Case Provider
+        Select Case Me.mProvider
             Case DbQuery.ProvidersList.OleDb : Return IIf(CBool(Value), "TRUE", "FALSE")
             Case DbQuery.ProvidersList.SqlClient : Return IIf(CBool(Value), "1", "0")
-            Case Else : Return "NULL"
         End Select
+
+        ' Else
+        Return "NULL"
     End Function
 
 
     ' Format a binary
-    Public Shared Function Binary(ByVal Buffer As Object) As String
+    Public Function Binary(ByVal Buffer As Object) As String
         ' Check for null value
         If IsDBNull(Buffer) Or Buffer Is Nothing Then
             Return "NULL"
 
         ElseIf TypeOf Buffer Is Array Then
-            Return Binary(CType(Buffer, Byte()))
+            Return Me.Binary(CType(Buffer, Byte()))
 
         ElseIf TypeOf Buffer Is String Then
-            Return Binary(CType(Buffer, String))
+            Return Me.Binary(CType(Buffer, String))
 
         Else
             Return "NULL"
         End If
     End Function
 
-    Public Shared Function Binary(ByVal Buffer() As Byte) As String
+    Public Function Binary(ByVal Buffer() As Byte) As String
         ' Check for null value
         If Buffer Is Nothing OrElse Buffer.Length = 0 Then
             Return "NULL"
@@ -210,14 +226,11 @@ Public Class DbSqlBuilder
         Return Builder
     End Function
 
-    Public Shared Function Binary(ByVal Value As String) As String
+    Public Function Binary(ByVal Value As String) As String
         ' Check for null value
-        If String.IsNullOrEmpty(Value.Trim()) Then
-            Return "NULL"
-        End If
-
+        If String.IsNullOrEmpty(Value.Trim()) Then Return "NULL"
         ' Return the encoded string
-        Return Binary(Encoding.Default.GetBytes(Value))
+        Return Me.Binary(Encoding.Default.GetBytes(Value))
     End Function
 
 #End Region
@@ -225,18 +238,15 @@ Public Class DbSqlBuilder
 #Region " UTILITIES "
 
     ' Return the string rappresentation of the system date/time
-    Public Shared Function GetSystemDate(Optional ByVal Provider As DbQuery.ProvidersList = DbQuery.ProvidersList.Undefined) As String
-        ' Fix the provider
-        If Provider = DbQuery.ProvidersList.Undefined Then
-            Provider = Bridge.Query.GetProvider()
-        End If
-
+    Public Function GetSystemDate() As String
         ' Select by provider
-        Select Case Provider
+        Select Case Me.mProvider
             Case DbQuery.ProvidersList.OleDb : Return "Now()"
             Case DbQuery.ProvidersList.SqlClient : Return "GETDATE()"
-            Case Else : Return String.Empty
         End Select
+
+        ' Else
+        Return Nothing
     End Function
 
     ' Return a DB value rappresentation
@@ -257,15 +267,16 @@ Public Class DbSqlBuilder
 
     ' Quote a field is necessary
     Public Shared Function Quote(Field As String) As String
-        If Not Field.Contains(".") And Not Field.Contains("(") Then
+        If Not Field.Contains(".") And Not Field.Contains("(") And Not Field.Contains("=") Then
+            ' Check for ASC and DESC
             ' Check if start with quote
-            If Not Field.StartsWith(DbSqlBuilder.QuotePrefix) Then
-                Field = DbSqlBuilder.QuotePrefix & Field
+            If Not Field.StartsWith(DbSqlBuilder.QUOTE_PREFIX) Then
+                Field = DbSqlBuilder.QUOTE_PREFIX & Field
             End If
 
             ' Check if end with quote
-            If Not Field.EndsWith(DbSqlBuilder.QuoteSuffix) Then
-                Field = Field & DbSqlBuilder.QuoteSuffix
+            If Not Field.EndsWith(DbSqlBuilder.QUOTE_SUFFIX) Then
+                Field = Field & DbSqlBuilder.QUOTE_SUFFIX
             End If
         End If
 
@@ -275,98 +286,199 @@ Public Class DbSqlBuilder
 
 #End Region
 
-#Region " BUILDER "
+#Region " PRIVATE "
 
-    ' Build a generic select sql command
-    Public Shared Function SelectCommand(TableName As String, Fields As IList(Of String), Clauses As DbClauses) As String
-        ' Build the value list
-        Dim FieldList As String = String.Empty
-        For Each Field As String In Fields
-            ' Build the field/value list
-            If Not String.IsNullOrEmpty(FieldList) Then FieldList &= ", "
-            FieldList &= DbSqlBuilder.Quote(Field)
-        Next
+    ' Quote a field
+    Private Function InternalQuote(Field As String) As String
+        ' Check for forced
+        If Me.mForceQuote And Field IsNot Nothing Then
+            ' Check for ASC and DESC
+            If Field.EndsWith(" ASC", StringComparison.OrdinalIgnoreCase) Then
+                Return DbSqlBuilder.Quote(Field.Replace(" ASC", String.Empty)) & " ASC"
 
-        ' Build the sql command
-        Dim Sql As String = String.Format("SELECT {0} FROM {1} ",
-                                          IIf(String.IsNullOrEmpty(FieldList), "*", FieldList),
-                                          DbSqlBuilder.Quote(TableName))
+            ElseIf Field.EndsWith(" DESC", StringComparison.OrdinalIgnoreCase) Then
+                Return DbSqlBuilder.Quote(Field.Replace(" DESC", String.Empty)) & " DESC"
 
-        ' Add the where clausole only if have
-        If Not Clauses.IsEmpty Then
-            Sql &= String.Format("WHERE {0} ", Clauses.ForSql)
+            Else
+                Return DbSqlBuilder.Quote(Field)
+            End If
         End If
 
-        ' Return the sql command
-        Return Sql
+        ' Else
+        Return Field
     End Function
 
-    ' Build a generic insert sql command
-    Public Shared Function InsertCommand(TableName As String, Values As IDictionary(Of String, Object)) As String
-        ' Strings builder
-        Dim FieldList As String = String.Empty
-        Dim ValueList As String = String.Empty
-
-        For Each Key As String In Values.Keys
-            ' Build the field list
-            If Not String.IsNullOrEmpty(FieldList) Then FieldList &= ", "
-            FieldList &= DbSqlBuilder.Quote(Key)
-
-            ' Build thew value list
-            If Not String.IsNullOrEmpty(ValueList) Then ValueList &= ", "
-            ValueList &= DbSqlBuilder.Variant(Values(Key))
-        Next
-
-        ' Define the query
-        Return String.Format("INSERT INTO {0} ({1}) VALUES ({2})",
-                             DbSqlBuilder.Quote(TableName),
-                             FieldList,
-                             ValueList)
-    End Function
-
-    ' Build a generic update sql command
-    Public Shared Function UpdateCommand(TableName As String, Values As IDictionary(Of String, Object), Clauses As DbClauses) As String
-        ' Build the value list
-        Dim ValuesList As String = String.Empty
-        For Each Key As String In Values.Keys
-            ' Build the field/value list
-            If Not String.IsNullOrEmpty(ValuesList) Then ValuesList &= ", "
-            ValuesList &= String.Format("{0} = {1}",
-                                        DbSqlBuilder.Quote(Key),
-                                        DbSqlBuilder.Variant(Values(Key)))
-        Next
-
-        ' Build the sql command
-        Dim Sql As String = String.Format("UPDATE {0} ", DbSqlBuilder.Quote(TableName))
-
-        If Not String.IsNullOrEmpty(ValuesList) Then
-            Sql &= String.Format("SET {0} ", ValuesList)
-        End If
-
-        ' Add the where clausole only if have
-        If Not Clauses.IsEmpty Then
-            Sql &= String.Format("WHERE {0} ", Clauses.ForSql)
-        End If
-
-        ' Return the sql command
-        Return Sql
-    End Function
-
-    ' Generic delete command
-    Public Shared Function DeleteCommand(TableName As String, Clauses As DbClauses) As String
-        ' Build the sql command
-        Dim Sql As String = String.Format("DELETE FROM {0} ", DbSqlBuilder.Quote(TableName))
-
-        ' Add the where clausole only if have
-        If Not Clauses.IsEmpty Then
-            Sql &= String.Format("WHERE {0} ", Clauses.ForSql)
-        End If
-
-        ' Return the sql command
-        Return Sql
+    ' Create a join 
+    Private Function ListJoiner(Fields() As String) As String
+        Return String.Join(", ", (From Field As String In Fields Where Field.Trim <> String.Empty Select Me.InternalQuote(Field)).ToArray)
     End Function
 
 #End Region
 
-End Class
+#Region " SETTER "
 
+    ' Set the table name
+    Public Function Table(Name As String) As DbSqlBuilder
+        ' Hold and return
+        Me.mTableName = Name
+        Return Me
+    End Function
+
+    ' Set the select fields
+    Public Function [Select](ParamArray Fields() As String) As DbSqlBuilder
+        ' Check for empty value
+        If Fields IsNot Nothing AndAlso Fields.Count > 0 Then
+            Me.mSelectFields = Me.ListJoiner(Fields)
+        End If
+
+        ' Return
+        Return Me
+    End Function
+
+    Public Function [Select](Fields As List(Of String)) As DbSqlBuilder
+        ' Call the overload
+        Return Me.Select(Fields.ToArray)
+    End Function
+
+    ' Set the insert clauses
+    Public Function Insert(Values As String) As DbSqlBuilder
+        ' Hold and return
+        Me.mInsertValues = Values
+        Return Me
+    End Function
+
+    Public Function Insert(Values As Dictionary(Of String, Object)) As DbSqlBuilder
+        ' Create the list
+        Dim StrList As String = String _
+            .Join(", ", (From Value In Values Where Value.Key.Trim <> String.Empty Select Me.InternalQuote(Value.Key)).ToArray)
+        Dim StrValues As String = String _
+            .Join(", ", (From Value In Values Where Value.Key.Trim <> String.Empty Select Me.Variant(Value.Value)).ToArray)
+        ' Call the overload
+        Return Me.Insert(String.Format("({0}) VALUES ({1})", StrList, StrValues))
+    End Function
+
+    ' Set the update clauses
+    Public Function Update(Values As String) As DbSqlBuilder
+        ' Hold and return
+        Me.mUpdateValues = Values
+        Return Me
+    End Function
+
+    Public Function Update(Values As Dictionary(Of String, Object)) As DbSqlBuilder
+        ' To Array
+        Dim Filtered() As String = (From Value In Values
+                                    Where Value.Key.Trim <> String.Empty
+                                    Select Me.InternalQuote(Value.Key) & " = " & Me.Variant(Value.Value)).ToArray
+        ' Build the string
+        Return Me.Update(String.Join(", ", Filtered))
+    End Function
+
+    ' Set the where clauses
+    Public Function Where(Clauses As String) As DbSqlBuilder
+        ' Hold and return
+        Me.mWhereClauses = Clauses
+        Return Me
+    End Function
+
+    Public Function Where(Clauses As DbClauses) As DbSqlBuilder
+        ' Call the overload
+        Return Me.Where(Clauses.ForSql)
+    End Function
+
+    ' Set the select fields
+    Public Function Order(ParamArray Fields() As String) As DbSqlBuilder
+        ' Check for empty value
+        If Fields IsNot Nothing AndAlso Fields.Count > 0 Then
+            Me.mOrderFields = Me.ListJoiner(Fields)
+        End If
+
+        ' Return
+        Return Me
+    End Function
+
+    Public Function Order(Fields As List(Of String)) As DbSqlBuilder
+        ' Call the overload
+        Return Me.Order(Fields.ToArray)
+    End Function
+
+#End Region
+
+#Region " CREATE "
+
+    ' Create the select command
+    Public ReadOnly Property SelectCommand() As String
+        Get
+            ' Check for table name
+            If Me.mTableName Is Nothing Then
+                Throw New Exception("The table name cannot be empty!")
+            End If
+
+            ' Create
+            Dim Sql As String = String.Format("SELECT {0} FROM {1}",
+                                          IIf(String.IsNullOrEmpty(Me.mSelectFields), "*", Me.mSelectFields),
+                                          Me.InternalQuote(Me.mTableName))
+
+            ' Add the clauses
+            If String.IsNullOrEmpty(Me.mWhereClauses) Then Sql &= String.Format(" WHERE {0}", Me.mWhereClauses)
+            If String.IsNullOrEmpty(Me.mOrderFields) Then Sql &= String.Format(" ORDER {0}", Me.mOrderFields)
+
+            ' Return the sql command
+            Return Sql
+        End Get
+    End Property
+
+    ' Create the insert command
+    Public ReadOnly Property InsertCommand() As String
+        Get
+            ' Check for table name
+            If Me.mTableName Is Nothing Then
+                Throw New Exception("The table name cannot be empty!")
+            End If
+
+            ' Return the sql command
+            Return String.Format("INSERT INTO {0} {1}", Me.InternalQuote(Me.mTableName), Me.mInsertValues)
+        End Get
+    End Property
+
+    ' Create the update command
+    Public ReadOnly Property UpdateCommand() As String
+        Get
+            ' Check for table name
+            If Me.mTableName Is Nothing Then
+                Throw New Exception("The table name cannot be empty!")
+            End If
+
+            ' Create the sql
+            Dim Sql As String = String.Format("UPDATE {0}", DbSqlBuilder.Quote(Me.mTableName))
+
+            ' Add the clauses
+            If Not String.IsNullOrEmpty(Me.mUpdateValues) Then Sql &= String.Format(" SET {0}", Me.mUpdateValues)
+            If String.IsNullOrEmpty(Me.mWhereClauses) Then Sql &= String.Format(" WHERE {0}", Me.mWhereClauses)
+
+            ' Return the sql command
+            Return Sql
+        End Get
+    End Property
+
+    ' Create the delete command
+    Public ReadOnly Property DeleteCommand() As String
+        Get
+            ' Check for table name
+            If Me.mTableName Is Nothing Then
+                Throw New Exception("The table name cannot be empty!")
+            End If
+
+            ' Create
+            Dim Sql As String = String.Format("DELETE FROM {1}", Me.InternalQuote(Me.mTableName))
+
+            ' Add the clauses
+            If String.IsNullOrEmpty(Me.mWhereClauses) Then Sql &= String.Format(" WHERE {0}", Me.mWhereClauses)
+
+            ' Return the sql command
+            Return Sql
+        End Get
+    End Property
+
+#End Region
+
+End Class

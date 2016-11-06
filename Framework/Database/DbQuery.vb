@@ -385,9 +385,13 @@ Public Class DbQuery
     End Function
 
     ' Generic insert command
-    Public Function Insert(TableName As String, Values As IDictionary(Of String, Object)) As Long
+    Public Function Insert(TableName As String, Values As Dictionary(Of String, Object)) As Long
         ' Execute the query command
-        Return Me.Exec(DbSqlBuilder.InsertCommand(TableName, Values), True)
+        Dim Command As String = New DbSqlBuilder() _
+            .Table(TableName) _
+            .Insert(Values) _
+            .InsertCommand
+        Return Me.Exec(Command, True)
     End Function
 
     ' Get the last identity
@@ -403,15 +407,24 @@ Public Class DbQuery
     End Function
 
     ' Generic update command
-    Public Function Update(TableName As String, Values As IDictionary(Of String, Object), Clause As SCFramework.DbClauses) As Long
+    Public Function Update(TableName As String, Values As Dictionary(Of String, Object), Clause As SCFramework.DbClauses) As Long
         ' Execute the query command
-        Return Me.Exec(DbSqlBuilder.UpdateCommand(TableName, Values, Clause), True)
+        Dim Command As String = New DbSqlBuilder() _
+            .Table(TableName) _
+            .Update(Values) _
+            .Where(Clause) _
+            .UpdateCommand
+        Return Me.Exec(Command, True)
     End Function
 
     ' Generic delete command
     Public Function Delete(TableName As String, Clause As SCFramework.DbClauses) As Long
         ' Execute the query command
-        Return Me.Exec(DbSqlBuilder.DeleteCommand(TableName, Clause), True)
+        Dim Command As String = New DbSqlBuilder() _
+            .Table(TableName) _
+            .Where(Clause) _
+            .DeleteCommand
+        Return Me.Exec(Command, True)
     End Function
 
 #End Region
@@ -450,21 +463,12 @@ Public Class DbQuery
     End Function
 
     ' Create a sql command and put the result inside a datatable
-    Public Function Table(TableName As String, Fields As ICollection, Clauses As SCFramework.DbClauses) As DataTable
-        ' Execute the query command
-        Return Me.Table(DbSqlBuilder.SelectCommand(TableName, Fields, Clauses), TableName)
-    End Function
-
-    ' Create a sql command and put the result inside a datatable
     Public Function Table(TableName As String) As DataTable
         ' Execute the query command
-        Return Me.Table(DbSqlBuilder.SelectCommand(TableName, Nothing, Nothing), TableName)
-    End Function
-
-    ' Get and empty table
-    Public Function EmptyTable(TableName As String) As DataTable
-        ' Return the table
-        Return Me.Table(TableName, Nothing, SCFramework.DbClauses.AlwaysFalse)
+        Dim Command As String = New DbSqlBuilder() _
+            .Table(TableName) _
+            .SelectCommand
+        Return Me.Table(Command, TableName)
     End Function
 
     ' Execute a sql command and get the first row details
@@ -496,8 +500,8 @@ Public Class DbQuery
         ' Check for exists
         If Adapter IsNot Nothing And CommandBuilder IsNot Nothing Then
             ' Set the quotes character
-            CommandBuilder.QuotePrefix = DbSqlBuilder.QuotePrefix
-            CommandBuilder.QuoteSuffix = DbSqlBuilder.QuoteSuffix
+            CommandBuilder.QuotePrefix = DbSqlBuilder.QUOTE_PREFIX
+            CommandBuilder.QuoteSuffix = DbSqlBuilder.QUOTE_SUFFIX
 
             ' Create the command
             Dim Command As DbCommand = Me.mConnection.CreateCommand()

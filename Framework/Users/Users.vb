@@ -46,15 +46,25 @@ Public Class Users
 
     ' Get a user details filtered by email
     Public Function GetUser(ID As Long) As User
+        ' Create the sql builder
+        Dim SqlBuilder As DbSqlBuilder = New DbSqlBuilder() _
+            .Table(Me.GetTableName()) _
+            .Where(Me.ToClauses(ID))
+
         ' If have one or more rows return the first else null
-        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Me.ToClauses(ID))
+        Dim Source As DataTable = Bridge.Query.Table(SqlBuilder.SelectCommand, Me.GetTableName())
         Return Me.GetFirstUser(Source)
     End Function
 
     ' Get a user details filtered by email
     Public Function GetUser(EMail As String) As User
+        ' Create the sql builder
+        Dim SqlBuilder As DbSqlBuilder = New DbSqlBuilder() _
+            .Table(Me.GetTableName()) _
+            .Where(DbClauses.FromPair("EMAIL", EMail))
+
         ' If have one or more rows return the first else null
-        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, SCFramework.DbClauses.FromPair("EMAIL", EMail))
+        Dim Source As DataTable = Bridge.Query.Table(SqlBuilder.SelectCommand, Me.GetTableName())
         Return Me.GetFirstUser(Source)
     End Function
 
@@ -65,8 +75,13 @@ Public Class Users
         Clauses.Add("LOGIN", Login)
         Clauses.Add("PASSWORD", Password)
 
+        ' Create the sql builder
+        Dim SqlBuilder As DbSqlBuilder = New DbSqlBuilder() _
+            .Table(Me.GetTableName()) _
+            .Where(Clauses)
+
         ' If have one or more rows return the first else null
-        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
+        Dim Source As DataTable = Bridge.Query.Table(SqlBuilder.SelectCommand, Me.GetTableName())
         Return Me.GetFirstUser(Source)
     End Function
 
@@ -76,8 +91,13 @@ Public Class Users
         Dim Clauses As SCFramework.DbClauses = New SCFramework.DbClauses()
         Clauses.Add("LOGIN", SCFramework.DbClauses.ComparerType.Different, SCFramework.User.ROOT_PREFIX, False)
 
+        ' Create the sql builder
+        Dim SqlBuilder As DbSqlBuilder = New DbSqlBuilder() _
+            .Table(Me.GetTableName()) _
+            .Where(Clauses)
+
         ' Return the users list
-        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
+        Dim Source As DataTable = Bridge.Query.Table(SqlBuilder.SelectCommand, Me.GetTableName())
         Return Me.GetAllUsers(Source)
     End Function
 
@@ -90,22 +110,37 @@ Public Class Users
             Clauses.Add("LEVEL", SCFramework.DbClauses.ComparerType.Equal, Level, False)
         Next
 
+        ' Create the sql builder
+        Dim SqlBuilder As DbSqlBuilder = New DbSqlBuilder() _
+            .Table(Me.GetTableName()) _
+            .Where(Clauses)
+
         ' Return the users list
-        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, Clauses)
+        Dim Source As DataTable = Bridge.Query.Table(SqlBuilder.SelectCommand, Me.GetTableName())
         Return Me.GetAllUsers(Source)
     End Function
 
     ' Check if a login already exists
     Public Function LoginExists(Login As String) As Boolean
+        ' Create the sql builder
+        Dim SqlBuilder As DbSqlBuilder = New DbSqlBuilder() _
+            .Table(Me.GetTableName()) _
+            .Where(DbClauses.FromPair("LOGIN", Login))
+
         ' If have one or more rows return the first else null
-        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, SCFramework.DbClauses.FromPair("LOGIN", Login))
+        Dim Source As DataTable = Bridge.Query.Table(SqlBuilder.SelectCommand, Me.GetTableName())
         Return Source.Rows.Count > 0
     End Function
 
     ' Check if a email already exists
     Public Function EMailExists(EMail As String) As Boolean
+        ' Create the sql builder
+        Dim SqlBuilder As DbSqlBuilder = New DbSqlBuilder() _
+            .Table(Me.GetTableName()) _
+            .Where(DbClauses.FromPair("EMAIL", EMail))
+
         ' If have one or more rows return the first else null
-        Dim Source As DataTable = Bridge.Query.Table(Me.GetTableName(), Nothing, SCFramework.DbClauses.FromPair("EMAIL", EMail))
+        Dim Source As DataTable = Bridge.Query.Table(SqlBuilder.SelectCommand, Me.GetTableName())
         Return Source.Rows.Count > 0
     End Function
 
@@ -143,11 +178,11 @@ Public Class Users
             ' Check the case 
             If User.ID = -1 Then
                 ' Create a new user
-                Return MyBase.Insert(User.ToHashTable())
+                Return MyBase.Insert(User.ToDictionary())
 
             Else
                 ' Update the user
-                Return MyBase.Update(User.ToHashTable(), Me.ToClauses(User.ID))
+                Return MyBase.Update(User.ToDictionary(), Me.ToClauses(User.ID))
             End If
         End If
     End Function
