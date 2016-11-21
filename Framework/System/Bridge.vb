@@ -124,6 +124,8 @@ Public Class Bridge
     Private Shared mStats As SCFramework.Stats = Nothing
     Private Shared mConfiguration As SCFramework.Configuration = Nothing
     Private Shared mLanguages As SCFramework.Languages = Nothing
+    Private Shared mTranslations As SCFramework.Translations = Nothing
+    Private Shared mFiles As SCFramework.Files = Nothing
 
 
     ' Stats
@@ -144,12 +146,30 @@ Public Class Bridge
         End Get
     End Property
 
-    ' Configuration
+    ' Languages
     Public Shared ReadOnly Property Languages As SCFramework.Languages
         Get
             ' Check if null and return the class static reference
             If Bridge.mLanguages IsNot Nothing Then Bridge.mLanguages = New SCFramework.Languages()
             Return Bridge.mLanguages
+        End Get
+    End Property
+
+    ' Translations
+    Public Shared ReadOnly Property Translations As SCFramework.Translations
+        Get
+            ' Check if null and return the class static reference
+            If Bridge.mTranslations IsNot Nothing Then Bridge.mTranslations = New SCFramework.Translations()
+            Return Bridge.mTranslations
+        End Get
+    End Property
+
+    ' Languages
+    Public Shared ReadOnly Property Files As SCFramework.Files
+        Get
+            ' Check if null and return the class static reference
+            If Bridge.mFiles IsNot Nothing Then Bridge.mFiles = New SCFramework.Files()
+            Return Bridge.mFiles
         End Get
     End Property
 
