@@ -123,6 +123,7 @@ Public Class Bridge
     ' Holders
     Private Shared mStats As SCFramework.Stats = Nothing
     Private Shared mConfiguration As SCFramework.Configuration = Nothing
+    Private Shared mLanguages As SCFramework.Languages = Nothing
 
 
     ' Stats
@@ -140,6 +141,15 @@ Public Class Bridge
             ' Check if null and return the class static reference
             If Bridge.mConfiguration IsNot Nothing Then Bridge.mConfiguration = New SCFramework.Configuration()
             Return Bridge.mConfiguration
+        End Get
+    End Property
+
+    ' Configuration
+    Public Shared ReadOnly Property Languages As SCFramework.Languages
+        Get
+            ' Check if null and return the class static reference
+            If Bridge.mLanguages IsNot Nothing Then Bridge.mLanguages = New SCFramework.Languages()
+            Return Bridge.mLanguages
         End Get
     End Property
 

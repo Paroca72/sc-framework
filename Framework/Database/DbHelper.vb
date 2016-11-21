@@ -234,7 +234,7 @@ Public MustInherit Class DbHelper
     End Function
 
     ' Update command
-    Public Overridable Function Update(Values As IDictionary(Of String, Object), Clauses As SCFramework.DbClauses) As Long
+    Public Overridable Function Update(Values As Dictionary(Of String, Object), Clauses As SCFramework.DbClauses) As Long
         ' Check for safety
         If (Me.Safety) And (Clauses Is Nothing OrElse Clauses.IsEmpty) Then
             Throw New Exception("This command will update all row in the table!")

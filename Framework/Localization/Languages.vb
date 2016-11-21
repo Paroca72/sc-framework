@@ -10,10 +10,6 @@
 ' Since memory managed you must remember to call the AcceptChanges method to confirm
 ' every changes.
 '
-' As strictly connected to other classes, changes will reflected on:
-'   + <SCFramework.Files> manager class and the related database table.
-'   + <SCFramework.Translations> manager class and the related database table.
-'
 ' The static access to this class can be found in the <SCFramework.Bridge> global class.
 '
 ' Version 5.0.0
@@ -28,6 +24,10 @@ Public Class Languages
 
     ' The user request query-string tag
     Public Const QUERYSTRING_TAG As String = "Language"
+
+    ' Holders
+    Private mAllLanguagesCodes() As String = Nothing
+    Private mDefaultLanguageCode As String = Nothing
 
 
 #Region " CONSTRUCTOR "
@@ -63,7 +63,15 @@ Public Class Languages
                        Select CurrentRow).FirstOrDefault()
 
             ' If exists return the code
-            If Row IsNot Nothing Then Return Row!CODE
+            If Row IsNot Nothing Then
+                Return Row!CODE
+
+            Else
+                ' Try to return the first in list
+                If Me.GetSource().Rows.Count > 0 Then
+                    Return Me.GetSource().Rows(0)!CODE
+                End If
+            End If
         End SyncLock
 
         ' If not found throw an exeception
@@ -122,14 +130,18 @@ Public Class Languages
     End Function
 
     ' Get all languages code
-    ' TODO: improve the performance storing permanently
     Public ReadOnly Property AllCodes() As String()
         Get
-            ' Lock the data source
-            SyncLock Me.DataSourceLocker
-                ' Get the list
-                Return (From Row As DataRow In Me.GetSource().AsEnumerable Select Row!CODE).ToArray()
-            End SyncLock
+            ' If the all language codes are not defined
+            If Me.mAllLanguagesCodes Is Nothing Then
+                ' Lock the data source
+                SyncLock Me.DataSourceLocker
+                    ' Get the list of all language codes
+                    Me.mAllLanguagesCodes = (From Row As DataRow In Me.GetSource().AsEnumerable Select Row!CODE).ToArray()
+                End SyncLock
+            End If
+            ' Return
+            Return Me.mAllLanguagesCodes
         End Get
     End Property
 
@@ -137,7 +149,13 @@ Public Class Languages
     Public Property [Default]() As String
         ' Getter
         Get
-            Return Me.GetDefaultLanguage()
+            ' If the default is not defined
+            If Me.mDefaultLanguageCode Is Nothing Then
+                ' Load and store the default language code
+                Me.mDefaultLanguageCode = Me.GetDefaultLanguage()
+            End If
+            ' Return the default language code
+            Return Me.mDefaultLanguageCode
         End Get
         ' Setter
         Set(Value As String)
@@ -238,13 +256,20 @@ Public Class Languages
         End If
 
         ' Reset the old code
+        Me.mDefaultLanguageCode = Nothing
+        Me.mAllLanguagesCodes = Nothing
     End Sub
 
     ' Delete languages from the database table.
     Public Shadows Sub Delete(Code As String)
         ' Check for empty values
         If Not SCFramework.Utils.String.IsEmptyOrWhite(Code) Then
+            ' Call the base method 
             MyBase.Delete(Me.ToClauses(Code))
+
+            ' Reset the codes
+            Me.mDefaultLanguageCode = Nothing
+            Me.mAllLanguagesCodes = Nothing
         End If
     End Sub
 
@@ -259,6 +284,10 @@ Public Class Languages
 
             ' Call the base method
             MyBase.Update(Values, Me.ToClauses(Code))
+
+            ' Reset the codes
+            Me.mDefaultLanguageCode = Nothing
+            Me.mAllLanguagesCodes = Nothing
         End If
     End Sub
 

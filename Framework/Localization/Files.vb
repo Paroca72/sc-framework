@@ -13,7 +13,7 @@
 
 
 Public Class Files
-    Inherits SCFramework.DataSourceHelper
+    Inherits SCFramework.Multilanguages
 
 
 #Region " MUST OVERRIDES "
@@ -26,20 +26,6 @@ Public Class Files
 #End Region
 
 #Region " PRIVATE "
-
-    ' Get the column value
-    Private Function GetColumnValue(Source As DataRow, Column As String) As Object
-        ' Check if exists
-        If Source.Table.Columns.Contains(Column) Then
-            ' Check the row state
-            Select Case Source.RowState
-                Case DataRowState.Deleted : Return Source(Column, DataRowVersion.Original)
-                Case Else : Return Source(Column)
-            End Select
-        End If
-        ' Return nothing
-        Return Nothing
-    End Function
 
     ' Delete the file or files from the phisical drive
     Private Sub DeletePhisically(Path As String)
@@ -55,36 +41,14 @@ Public Class Files
         End If
     End Sub
 
-    Private Sub DeletePhisically(Row As DataRow)
-        ' Get all the languages from the manager class
-        Dim Languages As SCFramework.Languages = New SCFramework.Languages()
-
-        ' Check for null values
-        If Row IsNot Nothing Then
-            ' Cycle all languages columns
-            For Each Language As String In Languages.AllCodes
-                ' Delete it
-                Me.DeletePhisically(Me.GetColumnValue(Row, Language))
-            Next
-        End If
-    End Sub
-
-    Private Sub DeletePhisically(Source As DataTable)
+    Private Sub DeletePhisically(Source As List(Of DataRow))
         ' Check for empty values
         If Source IsNot Nothing Then
             ' Cycle all rows
-            For Each Row As DataRow In Source.Rows
-                Me.DeletePhisically(Row)
+            For Each Row As DataRow In Source
+                Me.DeletePhisically(Row!VALUE)
             Next
         End If
-    End Sub
-
-    Private Sub DeletePhisically(Files() As String)
-        ' Cycle all files
-        For Each File As String In Files
-            ' Delete
-            Me.DeletePhisically(File)
-        Next
     End Sub
 
     ' Check the path field
@@ -101,104 +65,34 @@ Public Class Files
         End If
     End Sub
 
-    ' Check for have at list one languages field
-    Private Sub CheckPathFields(Values As IDictionary(Of String, Object))
-        ' Get all the languages from the manager class
-        Dim Languages As SCFramework.Languages = New SCFramework.Languages()
-        Dim AtLeastOneValid As Boolean = False
+#End Region
 
-        ' Cycle all paths
-        For Each Language As String In Languages.AllCodes
-            ' Check if contained inside the keys list
-            If Values.ContainsKey(Language) AndAlso
-                SCFramework.Utils.String.IsEmptyOrWhite(Values(Language)) Then
-                ' Check the path and set found one valid
-                Me.CheckPath(Values(Language))
-                AtLeastOneValid = True
-            End If
-        Next
+#Region " PROTECTED "
 
-        ' Check if have at least one valid path
-        If Not AtLeastOneValid Then
-            Throw New Exception("The file path is mandatory.")
-        End If
-    End Sub
+    Protected Overrides Function ElaborateToDelete(Source As DataTable) As List(Of DataRow)
+        ' Call the base methods and get back the list of the file to delete
+        Dim ToDelete As List(Of DataRow) = MyBase.ElaborateToDelete(Source)
+        Me.DeletePhisically(ToDelete)
+
+        ' Return
+        Return ToDelete
+    End Function
 
 #End Region
 
 #Region " PUBLIC "
 
+    ' Get the file path in language.
+    ' This method is same as GetValue and made only for coerence with file name.
+    Public Function GetFilePath(Key As String, Language As String) As String
+        Return Me.GetValue(Key, Language)
+    End Function
+
     ' Insert command
-    Public Overrides Function Insert(Values As Dictionary(Of String, Object)) As Long
+    Public Shadows Sub Insert(Key As String, FilePath As String, Language As String)
         ' Check the fields and call the base
-        Me.CheckPathFields(Values)
-        MyBase.Insert(Values)
-    End Function
-
-    ' Delete command
-    Public Overrides Function Delete(Clauses As DbClauses) As Long
-        ' Check if memory managed
-        If Not Me.IsMemoryManaged Then
-            ' Delete the files phisically
-            Me.DeletePhisically(Me.GetSource(Clauses))
-        End If
-
-        ' Call the base method
-        MyBase.Delete(Clauses)
-    End Function
-
-    ' Update command
-    Public Shadows Function Update() As Long
-        Throw New Exception("Cannot update the files list through this class.")
-    End Function
-
-    ' Accept the datasource changes
-    Public Overrides Sub AcceptChanges()
-        ' Only if work in memory
-        If Not Me.IsMemoryManaged Then Exit Sub
-
-        ' Cycle all the datasource for delete files phisivally
-        Dim Deleted As DataTable = Me.GetSource().GetChanges(DataRowState.Deleted)
-        Me.DeletePhisically(Deleted)
-
-        ' Call the base method
-        MyBase.AcceptChanges()
-    End Sub
-
-#End Region
-
-#Region " STRUCTURE "
-
-    ' Add column language to the table
-    Public Sub AddLanguageColumn(LanguageCode As String, Optional Query As SCFramework.DbQuery = Nothing)
-        ' Check if the column already exists
-        If Not SCFramework.Utils.String.IsEmptyOrWhite(LanguageCode) And
-            Not Me.WritableColumns.Contains(LanguageCode) Then
-            ' Check for the query manager object
-            If Query Is Nothing Then Query = Me.Query
-
-            ' Alter the table and add to the writable columns because we changed the table structure
-            Query.Exec(String.Format("ALTER TABLE [{0}] ADD [{1}] NVARCHAR(512)", Me.GetTableName(), LanguageCode))
-            Me.WritableColumns.Add(LanguageCode)
-        End If
-    End Sub
-
-    ' Add column language to the table
-    Public Sub DropLanguageColumn(LanguageCode As String, Optional Query As SCFramework.DbQuery = Nothing)
-        ' Check if the column exists
-        If Not SCFramework.Utils.String.IsEmptyOrWhite(LanguageCode) And
-            Me.WritableColumns.Contains(LanguageCode) Then
-            ' Check for the query manager object
-            If Query Is Nothing Then Query = Me.Query
-
-            ' Before delete the column from the table we must delete phisically all the files
-            ' stored in this column.
-            Me.DeletePhisically(SCFramework.Utils.DataTable.ToArray(Me.GetSource(Nothing), LanguageCode))
-
-            ' Alter the table and remove to the writable columns because we changed the table structure
-            Query.Exec(String.Format("ALTER TABLE [{0}] DROP COLUMN [{1}]", Me.GetTableName(), LanguageCode))
-            Me.WritableColumns.Remove(LanguageCode)
-        End If
+        Me.CheckPath(FilePath)
+        MyBase.Insert(Key, FilePath, Language)
     End Sub
 
 #End Region

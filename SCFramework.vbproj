@@ -86,6 +86,7 @@
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="Framework\Database\DbHelperExtended.vb" />
+    <Compile Include="Framework\Localization\Multilanguages.vb" />
     <Compile Include="Framework\System\Tracer.vb" />
     <Compile Include="Framework\System\Stats.vb" />
     <Compile Include="Framework\System\Bridge.vb" />
