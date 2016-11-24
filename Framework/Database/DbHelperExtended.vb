@@ -33,8 +33,11 @@ Public MustInherit Class DbHelperExtended
 #Region " CONSTRUCTOR "
 
     Public Sub New()
-        ' Base class
+        ' Base
         MyBase.New()
+
+        ' Analize the table
+        Me.OnAnalizeTable()
     End Sub
 
 #End Region
@@ -142,21 +145,11 @@ Public MustInherit Class DbHelperExtended
         Next
     End Sub
 
-#End Region
-
-#Region " OVERRIDES "
-
     ' Analize the table and store all usefull data
-    Public Overrides Sub OnAnalizeTable()
-        ' Call the super
-        MyBase.OnAnalizeTable()
-
-        ' Private query holder
+    Private Sub OnAnalizeTable()
+        ' Private holders
         Dim Query As SCFramework.DbQuery = Me.Query
-
-        ' Holder
         Dim Connection As DbConnection = Query.GetConnection()
-        Dim Provider As DbQuery.ProvidersList = Query.GetProvider()
 
         ' Open
         Dim MustBeOpen As Boolean = (Query.GetConnection().State = ConnectionState.Closed)
@@ -171,9 +164,9 @@ Public MustInherit Class DbHelperExtended
         Me.mOrderColumns = New List(Of String)
 
         ' Select the analisys by provider
-        Select Case Provider
-            Case DbQuery.ProvidersList.OleDb : Me.OleDbAnalisys(Connection)
-            Case DbQuery.ProvidersList.SqlClient : Me.SqlAnalisys(Connection)
+        Select Case Query.GetProvider()
+            Case "System.Data.OleDb" : Me.OleDbAnalisys(Connection)
+            Case "System.Data.SqlClient" : Me.SqlAnalisys(Connection)
         End Select
 
         ' Close
@@ -181,6 +174,10 @@ Public MustInherit Class DbHelperExtended
             Connection.Close()
         End If
     End Sub
+
+#End Region
+
+#Region " OVERRIDES "
 
     ' Delete
     Public Overrides Function Delete(Clauses As SCFramework.DbClauses) As Long

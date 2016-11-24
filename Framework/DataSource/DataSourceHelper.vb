@@ -32,7 +32,7 @@ Public MustInherit Class DataSourceHelper
 #Region " CONSTRUCTOR "
 
     Public Sub New()
-        ' Base class
+        ' Base
         MyBase.New()
 
         ' Init
@@ -178,7 +178,8 @@ Public MustInherit Class DataSourceHelper
         ' Create the sql builder
         Dim SqlBuilder As DbSqlBuilder = New DbSqlBuilder() _
             .Table(Me.GetTableName()) _
-            .Where(Clauses)
+            .Where(Clauses) _
+            .Order(Me.OrderColumns)
 
         ' I must create a new datasource with the proper columns settings
         Dim Source As DataTable = Bridge.Query.Table(SqlBuilder.SelectCommand, Me.GetTableName())
@@ -191,7 +192,6 @@ Public MustInherit Class DataSourceHelper
         ' Data source columns settings
         If Me.PrimaryKeys.Count > 0 Then SCFramework.Utils.DataTable.SetPrimaryKeys(Source, Me.PrimaryKeys.ToArray)
         If Me.AutoNumbers.Count > 0 Then SCFramework.Utils.DataTable.SetAutoIncrements(Source, Me.AutoNumbers.ToArray)
-        If Me.OrderColumns.Count > 0 Then Source = Source.AsEnumerable().OrderBy("", Me.OrderColumns)
 
         ' TODO: all other columns
 
@@ -265,13 +265,9 @@ Public MustInherit Class DataSourceHelper
 
         ' Select the case by the provider only if have an identity field to update
         If Me.IdentityColumnName IsNot Nothing Then
-            Select Case Me.Query.GetProvider
-                Case SCFramework.DbQuery.ProvidersList.OleDb
-                    AddHandler CType(Adapter, OleDb.OleDbDataAdapter).RowUpdated, AddressOf HandleOldDbRowUpdated
-
-                Case SCFramework.DbQuery.ProvidersList.SqlClient
-                    AddHandler CType(Adapter, SqlClient.SqlDataAdapter).RowUpdated, AddressOf HandleSqlRowUpdated
-
+            Select Case Me.Query.GetProvider()
+                Case "System.Data.OleDb" : AddHandler CType(Adapter, OleDb.OleDbDataAdapter).RowUpdated, AddressOf HandleOldDbRowUpdated
+                Case "System.DataSqlClient" : AddHandler CType(Adapter, SqlClient.SqlDataAdapter).RowUpdated, AddressOf HandleSqlRowUpdated
             End Select
         End If
 
@@ -329,7 +325,14 @@ Public MustInherit Class DataSourceHelper
     Public Overridable Function GetSource(Optional Clauses As SCFramework.DbClauses = Nothing,
                                           Optional KeepInMemory As Boolean = False) As DataTable
         ' Hold the source
-        GetSource = IIf(Me.IsMemoryManaged, Me.SelectDataSource(Clauses), Me.CreateNewDataSource(Clauses))
+        If Me.IsMemoryManaged Then
+            ' if memory managed select the source from the memory
+            GetSource = Me.SelectDataSource(Clauses)
+
+        Else
+            ' If NOT memory managed create a new datasource
+            GetSource = Me.CreateNewDataSource(Clauses)
+        End If
 
         ' Hold the status is needed 
         If KeepInMemory Then

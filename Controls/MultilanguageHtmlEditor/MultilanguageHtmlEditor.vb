@@ -28,6 +28,7 @@ Namespace WebControls
 
 #Region " CONTRUCTOR "
 
+        ' Define the class constructor
         Public Sub New()
             ' Define the container as a DIV
             MyBase.New(HtmlTextWriterTag.Div)
@@ -43,7 +44,8 @@ Namespace WebControls
             If Not Me.DesignMode Then
                 ' Include the resources
                 Me.IncludeCSSResources()
-                Me.IncludeScriptsResources()
+                Me.IncludeStaticScriptsResources()
+                'Me.IncludeDynamicScriptsResources()
             End If
         End Sub
 
@@ -104,7 +106,7 @@ Namespace WebControls
 
 #End Region
 
-#Region " PRIVATES METHODS "
+#Region " RESOURCES "
 
         ' Check if is a call-back or a post-back
         Private Function IsCallback() As Boolean
@@ -136,26 +138,8 @@ Namespace WebControls
             End If
         End Sub
 
-        ' Load the scripts resource
-        Private Sub IncludeScriptsResources()
-            ' Create the buttons by languages codes
-            Dim Clauses As DbClauses = New DbClauses("VISIBLE", DbClauses.ComparerType.Equal, True)
-            Dim Buttons As String = String.Empty
-
-            For Each Row As DataRow In Bridge.Languages.GetSource(Clauses).Rows
-                If String.IsNullOrEmpty(Buttons) Then Buttons &= ", "
-                Buttons = "{text: " & Row!TITLE & "}"
-            Next
-
-            ' Create the dynamic script
-            Dim DynamicScript As String = "for (edId in tinyMCE.editors)" &
-                                            "tinyMCE.editors[edId].addButton('Languages', {" &
-                                                "type: 'buttongroup'," &
-                                                "items: [" &
-                                                    Buttons &
-                                                "]" &
-                                            "}"
-
+        ' Load the static scripts resource
+        Private Sub IncludeStaticScriptsResources()
             ' If the page have associated a script manager (Ajax) add the script resource directly by the script manager.
             ' Else register the script by the page client script is not already registered.
             If ScriptManager.GetCurrent(Me.Page) IsNot Nothing Then
@@ -178,6 +162,44 @@ Namespace WebControls
                     ' Get the script resource URL and register it on the page
                     Dim URL As String = Page.ClientScript.GetWebResourceUrl(Me.GetType(), MultilanguageHtmlEditor.STATIC_SCRIPT_RESOURCE_NAME)
                     Page.ClientScript.RegisterClientScriptInclude(MultilanguageHtmlEditor.STATIC_SCRIPT_RESOURCE_UID, URL)
+                End If
+            End If
+        End Sub
+
+        ' Load the dynamic scripts resource
+        Private Sub IncludeDynamicScriptsResources()
+            ' Create the buttons by languages codes
+            Dim Clauses As DbClauses = New DbClauses("VISIBLE", DbClauses.ComparerType.Equal, True)
+            Dim Group As String = String.Empty
+
+            For Each Row As DataRow In Bridge.Languages.GetSource(Clauses).Rows
+                If String.IsNullOrEmpty(Group) Then Group &= ", "
+                Group = "{text: '" & Row!TITLE & "'}"
+            Next
+
+            ' Create the dynamic script
+            Dim DynamicScript As String = "tinymce.on('addeditor', function (event) {" &
+                                            "event.editor.addButton('Languages', {" &
+                                                "type: 'buttongroup'," &
+                                                "items: [" &
+                                                    Group &
+                                                "]" &
+                                            "});" &
+                                          "}, true);"
+
+            ' If the page have associated a script manager (Ajax) add the script resource directly by the script manager.
+            ' Else register the script by the page client script is not already registered.
+            If ScriptManager.GetCurrent(Me.Page) IsNot Nothing Then
+                ' Add by script manager
+                ScriptManager.RegisterClientScriptBlock(
+                    Me.Page, Me.GetType(), MultilanguageHtmlEditor.DYNAMIC_SCRIPT_RESOURCE_UID, DynamicScript, True)
+
+            Else
+                ' Check if already registered
+                If Not Page.ClientScript.IsClientScriptBlockRegistered(MultilanguageHtmlEditor.DYNAMIC_SCRIPT_RESOURCE_UID) Then
+                    ' Get the script resource and register it on the page
+                    Page.ClientScript.RegisterClientScriptBlock(
+                        Me.GetType(), MultilanguageHtmlEditor.TINYMCE_RESOURCE_UID, DynamicScript, True)
                 End If
             End If
         End Sub

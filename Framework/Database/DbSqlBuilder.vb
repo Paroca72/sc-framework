@@ -23,7 +23,7 @@ Public Class DbSqlBuilder
     Public Const QUOTE_SUFFIX As String = "]"
 
     ' Holder
-    Private mProvider As DbQuery.ProvidersList = DbQuery.ProvidersList.Undefined
+    Private mProvider As String = "Undefined"
 
     Private mForceQuote As Boolean = True
     Private mStringEmptyIsNULL As Boolean = True
@@ -44,7 +44,7 @@ Public Class DbSqlBuilder
         Me.New(Bridge.Query.GetProvider())
     End Sub
 
-    Sub New(Provider As DbQuery.ProvidersList)
+    Sub New(Provider As String)
         Me.mProvider = Provider
         Me.mDataBaseCulture = CultureInfo.InvariantCulture
     End Sub
@@ -90,8 +90,8 @@ Public Class DbSqlBuilder
 
         ' Select the return value by provider type
         Select Case Me.mProvider
-            Case DbQuery.ProvidersList.OleDb : Return "'" & Value & "'"
-            Case DbQuery.ProvidersList.SqlClient : Return "N'" & Value & "'"
+            Case "System.Data.OleDb" : Return "'" & Value & "'"
+            Case "System.Data.SqlClient" : Return "N'" & Value & "'"
         End Select
 
         ' Else
@@ -143,7 +143,7 @@ Public Class DbSqlBuilder
 
             ' Select the returned value by the provider type
             Select Case Me.mProvider
-                Case DbQuery.ProvidersList.OleDb
+                Case "System.Data.OleDb"
                     If Complete Then
                         ' Long date format
                         Return "#" & CDate(Value).ToString(Me.mDataBaseCulture) & "#"
@@ -152,7 +152,7 @@ Public Class DbSqlBuilder
                         Return "#" & CDate(Value).ToString("d", Me.mDataBaseCulture) & "#"
                     End If
 
-                Case DbQuery.ProvidersList.SqlClient
+                Case "System.Data.SqlClient"
                     If Complete Then
                         ' Long date format
                         Dim Temp As String = "CONVERT(DateTime, '" & CDate(Value).ToString("yyyyMMdd HH:mm:ss") & "')"
@@ -181,8 +181,8 @@ Public Class DbSqlBuilder
 
         ' Select the returned value by the provider type
         Select Case Me.mProvider
-            Case DbQuery.ProvidersList.OleDb : Return IIf(CBool(Value), "TRUE", "FALSE")
-            Case DbQuery.ProvidersList.SqlClient : Return IIf(CBool(Value), "1", "0")
+            Case "System.Data.OleDb" : Return IIf(CBool(Value), "TRUE", "FALSE")
+            Case "System.Data.SqlClient" : Return IIf(CBool(Value), "1", "0")
         End Select
 
         ' Else
@@ -243,8 +243,8 @@ Public Class DbSqlBuilder
     Public Function GetSystemDate() As String
         ' Select by provider
         Select Case Me.mProvider
-            Case DbQuery.ProvidersList.OleDb : Return "Now()"
-            Case DbQuery.ProvidersList.SqlClient : Return "GETDATE()"
+            Case "System.Data.OleDb" : Return "Now()"
+            Case "System.Data.SqlClient" : Return "GETDATE()"
         End Select
 
         ' Else
@@ -326,6 +326,7 @@ Public Class DbSqlBuilder
         Return Me
     End Function
 
+
     ' Set the select fields
     Public Function [Select](ParamArray Fields() As String) As DbSqlBuilder
         ' Check for empty value
@@ -338,9 +339,15 @@ Public Class DbSqlBuilder
     End Function
 
     Public Function [Select](Fields As List(Of String)) As DbSqlBuilder
-        ' Call the overload
-        Return Me.Select(Fields.ToArray)
+        ' Check and call the overload
+        If Fields IsNot Nothing Then
+            Return Me.Select(Fields.ToArray)
+        End If
+
+        ' Return
+        Return Me
     End Function
+
 
     ' Set the insert clauses
     Public Function Insert(Values As String) As DbSqlBuilder
@@ -350,6 +357,11 @@ Public Class DbSqlBuilder
     End Function
 
     Public Function Insert(Values As Dictionary(Of String, Object)) As DbSqlBuilder
+        ' Check for empty values
+        If Values Is Nothing Then
+            Return Me.Insert(String.Empty)
+        End If
+
         ' Create the list
         Dim StrList As String = String _
             .Join(", ", (From Value In Values Where Value.Key.Trim <> String.Empty Select Me.InternalQuote(Value.Key)).ToArray)
@@ -359,6 +371,7 @@ Public Class DbSqlBuilder
         Return Me.Insert(String.Format("({0}) VALUES ({1})", StrList, StrValues))
     End Function
 
+
     ' Set the update clauses
     Public Function Update(Values As String) As DbSqlBuilder
         ' Hold and return
@@ -367,6 +380,11 @@ Public Class DbSqlBuilder
     End Function
 
     Public Function Update(Values As Dictionary(Of String, Object)) As DbSqlBuilder
+        ' Check for empty values
+        If Values Is Nothing Then
+            Return Me.Update(String.Empty)
+        End If
+
         ' To Array
         Dim Filtered() As String = (From Value In Values
                                     Where Value.Key.Trim <> String.Empty
@@ -374,6 +392,7 @@ Public Class DbSqlBuilder
         ' Build the string
         Return Me.Update(String.Join(", ", Filtered))
     End Function
+
 
     ' Set the where clauses
     Public Function Where(Clauses As String) As DbSqlBuilder
@@ -383,9 +402,15 @@ Public Class DbSqlBuilder
     End Function
 
     Public Function Where(Clauses As DbClauses) As DbSqlBuilder
+        ' Check for empty values
+        If Clauses Is Nothing Then
+            Return Me.Where(String.Empty)
+        End If
+
         ' Call the overload
         Return Me.Where(Clauses.ForSql)
     End Function
+
 
     ' Set the select fields
     Public Function Order(ParamArray Fields() As String) As DbSqlBuilder
@@ -399,6 +424,11 @@ Public Class DbSqlBuilder
     End Function
 
     Public Function Order(Fields As List(Of String)) As DbSqlBuilder
+        ' Check for empty values
+        If Fields Is Nothing Then
+            Return Me.Order(String.Empty)
+        End If
+
         ' Call the overload
         Return Me.Order(Fields.ToArray)
     End Function
@@ -421,8 +451,8 @@ Public Class DbSqlBuilder
                                           Me.InternalQuote(Me.mTableName))
 
             ' Add the clauses
-            If String.IsNullOrEmpty(Me.mWhereClauses) Then Sql &= String.Format(" WHERE {0}", Me.mWhereClauses)
-            If String.IsNullOrEmpty(Me.mOrderFields) Then Sql &= String.Format(" ORDER {0}", Me.mOrderFields)
+            If Not Utils.String.IsEmptyOrWhite(Me.mWhereClauses) Then Sql &= String.Format(" WHERE {0}", Me.mWhereClauses)
+            If Not Utils.String.IsEmptyOrWhite(Me.mOrderFields) Then Sql &= String.Format(" ORDER BY {0}", Me.mOrderFields)
 
             ' Return the sql command
             Return Sql
@@ -454,8 +484,8 @@ Public Class DbSqlBuilder
             Dim Sql As String = String.Format("UPDATE {0}", DbSqlBuilder.Quote(Me.mTableName))
 
             ' Add the clauses
-            If Not String.IsNullOrEmpty(Me.mUpdateValues) Then Sql &= String.Format(" SET {0}", Me.mUpdateValues)
-            If String.IsNullOrEmpty(Me.mWhereClauses) Then Sql &= String.Format(" WHERE {0}", Me.mWhereClauses)
+            If Not Utils.String.IsEmptyOrWhite(Me.mUpdateValues) Then Sql &= String.Format(" SET {0}", Me.mUpdateValues)
+            If Not Utils.String.IsEmptyOrWhite(Me.mWhereClauses) Then Sql &= String.Format(" WHERE {0}", Me.mWhereClauses)
 
             ' Return the sql command
             Return Sql
@@ -474,7 +504,7 @@ Public Class DbSqlBuilder
             Dim Sql As String = String.Format("DELETE FROM {1}", Me.InternalQuote(Me.mTableName))
 
             ' Add the clauses
-            If String.IsNullOrEmpty(Me.mWhereClauses) Then Sql &= String.Format(" WHERE {0}", Me.mWhereClauses)
+            If Not Utils.String.IsEmptyOrWhite(Me.mWhereClauses) Then Sql &= String.Format(" WHERE {0}", Me.mWhereClauses)
 
             ' Return the sql command
             Return Sql

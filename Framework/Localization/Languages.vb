@@ -33,7 +33,7 @@ Public Class Languages
 #Region " CONSTRUCTOR "
 
     Sub New()
-        ' Call the base
+        ' Base
         MyBase.New()
 
         ' Define the order columns
@@ -294,55 +294,6 @@ Public Class Languages
             Me.mDefaultLanguageCode = Nothing
             Me.mAllLanguagesCodes = Nothing
         End If
-    End Sub
-
-    ' Fix the changes on the database using the data source held in memory
-    Public Overrides Sub AcceptChanges()
-        ' Get the current query object
-        Dim Query As SCFramework.DbQuery = Me.Query
-        ' Determine if must manage the transaction
-        Dim TransactionOwner As Boolean = Not Query.InTransaction
-
-        Try
-            ' Check if not within a transaction
-            If TransactionOwner Then Query.StartTransaction()
-
-            ' Cycle all rows in source
-            For Each Row As DataRow In Me.GetSource().Rows
-                ' Check the row state
-                Select Case Row.RowState
-                    Case DataRowState.Added
-                        ' If added insert the language column to the translations and files table
-                        ' TODO
-                        'Translations.Instance.AddLanguageColumn(Row!CODE, Query)
-                        'Files.Instance.AddLanguageColumn(Row!CODE, Query)
-
-                    Case DataRowState.Deleted
-                        ' Get the original code from the deleted row
-                        Dim Code As String = Row("CODE", DataRowVersion.Original)
-
-                        ' If deleted remove the language column to the translations and files table
-                        ' TODO
-                        'Translations.Instance.DropLanguageColumn(Code, Query)
-                        'Files.Instance.DropLanguageColumn(Code, Query)
-
-                End Select
-            Next
-
-            ' Lock the data source and try to update
-            SyncLock Me.DataSourceLocker
-                Query.UpdateDatabase(Me.GetSource())
-            End SyncLock
-
-            ' Commit the transaction is needed
-            If TransactionOwner Then Query.CommitTransaction()
-
-        Catch ex As Exception
-            ' Rollback the transaction is needed and propagate the exception
-            If TransactionOwner Then Query.RollBackTransaction()
-            Throw ex
-
-        End Try
     End Sub
 
     ' Force to reload data source using the last clauses at the next source access

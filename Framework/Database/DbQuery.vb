@@ -20,14 +20,6 @@ Imports System.Data.Common
 ' Classe Query
 Public Class DbQuery
 
-    ' Providers
-    Public Enum ProvidersList As Short
-        Undefined = -1
-        SqlClient = 0
-        OleDb = 1
-    End Enum
-
-
     ' The database connection generic object
     Private mConnection As DbConnection = Nothing
     Private mTransaction As DbTransaction = Nothing
@@ -146,12 +138,12 @@ Public Class DbQuery
 
             ' Select the analisys by provider
             Select Case Me.GetProvider()
-                Case DbQuery.ProvidersList.OleDb
+                Case "System.Data.OleDb"
                     '-----------------------------------------
                     Dim Table As DataTable = Me.mConnection.GetSchema("Tables", New Object() {Nothing, Name, Nothing})
                     Return Table.Rows.Count <> 0
 
-                Case DbQuery.ProvidersList.SqlClient
+                Case "System.Data.SqlClient"
                     '-----------------------------------------
                     Dim Sql As String = String.Format("SELECT * FROM sys.tables WHERE name = '{0}' AND type = 'U'", Name)
                     Return Me.Exists(Sql)
@@ -191,23 +183,23 @@ Public Class DbQuery
 #Region " PROPERTIES "
 
     ' Get the provider type (READONLY)
-    Public ReadOnly Property GetProvider() As ProvidersList
+    Public ReadOnly Property GetProvider() As String
         Get
             ' Check if the connection exists
             If Me.mConnection IsNot Nothing Then
                 ' Check for sql
                 If TypeOf Me.mConnection Is SqlClient.SqlConnection Then
-                    Return ProvidersList.SqlClient
+                    Return "System.Data.SqlClient"
                 End If
 
                 ' Check for OleDb
                 If TypeOf Me.mConnection Is OleDb.OleDbConnection Then
-                    Return ProvidersList.OleDb
+                    Return "System.Data.OleDb"
                 End If
             End If
 
             ' Not finded
-            Return ProvidersList.Undefined
+            Return "Undefined"
         End Get
     End Property
 
@@ -333,13 +325,13 @@ Public Class DbQuery
         If ReturnIdentity Then
             ' Choice the action by the provider
             Select Case Me.GetProvider()
-                Case ProvidersList.OleDb
+                Case "System.Data.OleDb"
                     ' Execute the sql command
                     Me.ExecuteQuery(Sql, False)
                     ' Execute the identity request
                     Return Me.ExecuteQuery("SELECT @@IDENTITY", True)
 
-                Case ProvidersList.SqlClient
+                Case "System.Data.SqlClient"
                     ' Add the identity request to sql command
                     Sql &= "; SELECT Scope_Identity();"
                     ' Execute the command
@@ -356,13 +348,13 @@ Public Class DbQuery
     Public Sub Exec(ByVal ParamArray SqlCommands() As String)
         ' Choice the action by the provider
         Select Case Me.GetProvider()
-            Case ProvidersList.OleDb
+            Case "System.Data.OleDb"
                 ' Cycle all sql command and execute it
                 For Each Sql As String In SqlCommands
                     Me.ExecuteQuery(Sql, False)
                 Next
 
-            Case ProvidersList.SqlClient
+            Case "System.Data.SqlClient"
                 ' Create a command list
                 Dim Compound As String = String.Empty
                 For Each Sql As String In SqlCommands
@@ -401,8 +393,8 @@ Public Class DbQuery
 
         ' Choice the action by the provider
         Select Case Me.GetProvider()
-            Case ProvidersList.OleDb : Return Me.ExecuteQuery("SELECT @@IDENTITY", True)
-            Case ProvidersList.SqlClient : Return Me.ExecuteQuery("SELECT Scope_Identity();", True)
+            Case "System.Data.OleDb" : Return Me.ExecuteQuery("SELECT @@IDENTITY", True)
+            Case "System.Data.SqlClient" : Return Me.ExecuteQuery("SELECT Scope_Identity();", True)
         End Select
     End Function
 
@@ -436,11 +428,12 @@ Public Class DbQuery
         ' Check for database connection
         Me.CheckDbConnection()
 
-        ' Define the datatable and the adapter
-        Dim DataTable As DataTable = New DataTable()
-        Dim DataAdapter As DbDataAdapter = DbProviderFactories.GetFactory(Me.mConnection).CreateDataAdapter()
+        ' Define the adapter
+        Dim ProviderFactory As DbProviderFactory = DbProviderFactories.GetFactory(Me.GetProvider)
+        Dim DataAdapter As DbDataAdapter = ProviderFactory.CreateDataAdapter()
 
-        ' Fix the table name
+        ' Define the datatale and fix the table name
+        Dim DataTable As DataTable = New DataTable()
         If Not String.IsNullOrEmpty(TableName) Then
             DataTable.TableName = TableName
         End If

@@ -103,6 +103,35 @@ Public MustInherit Class DbHelper
             .ToDictionary(Of String, Object)(Function(Pair) Pair.Key, Function(Pair) Pair.Value)
     End Function
 
+    ' Analize the table and store all usefull data
+    Private Sub OnAnalizeTable()
+        ' Private holders
+        Dim Query As SCFramework.DbQuery = Me.Query
+        Dim Connection As DbConnection = Query.GetConnection()
+
+        ' Open
+        Dim MustBeOpen As Boolean = (Query.GetConnection().State = ConnectionState.Closed)
+        If MustBeOpen Then
+            Connection.Open()
+        End If
+
+        ' Define the holder
+        Me.mPrimaryKeysColumns = New List(Of String)
+        Me.mAutoNumberColumns = New List(Of String)
+        Me.mWritableColumns = New List(Of String)
+
+        ' Select the analisys by provider
+        Select Case Query.GetProvider()
+            Case "System.Data.OleDb" : Me.OleDbAnalisys(Connection)
+            Case "System.Data.SqlClient" : Me.SqlAnalisys(Connection)
+        End Select
+
+        ' Close the connection to database
+        If MustBeOpen Then
+            Connection.Close()
+        End If
+    End Sub
+
 #End Region
 
 #Region " PROTECTED "
@@ -184,38 +213,6 @@ Public MustInherit Class DbHelper
 
     ' Get the linked database table name
     Public MustOverride Function GetTableName() As String
-
-    ' Analize the table and store all usefull data
-    Public Overridable Sub OnAnalizeTable()
-        ' Private query holder
-        Dim Query As SCFramework.DbQuery = Me.Query
-
-        ' Holder
-        Dim Connection As DbConnection = Query.GetConnection()
-        Dim Provider As DbQuery.ProvidersList = Query.GetProvider()
-
-        ' Open
-        Dim MustBeOpen As Boolean = (Query.GetConnection().State = ConnectionState.Closed)
-        If MustBeOpen Then
-            Connection.Open()
-        End If
-
-        ' Define the holder
-        Me.mPrimaryKeysColumns = New List(Of String)
-        Me.mAutoNumberColumns = New List(Of String)
-        Me.mWritableColumns = New List(Of String)
-
-        ' Select the analisys by provider
-        Select Case Provider
-            Case DbQuery.ProvidersList.OleDb : Me.OleDbAnalisys(Connection)
-            Case DbQuery.ProvidersList.SqlClient : Me.SqlAnalisys(Connection)
-        End Select
-
-        ' Close the connection to database
-        If MustBeOpen Then
-            Connection.Close()
-        End If
-    End Sub
 
     ' Delete command
     Public Overridable Function Delete(Clauses As SCFramework.DbClauses) As Long
