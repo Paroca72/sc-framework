@@ -59,8 +59,8 @@ Public Class DbQuery
             Return Connection
 
         Catch ex As Exception
-            ' Else return nothing
-            Return Nothing
+            ' Else throw an exception
+            Throw New Exception("Impossible to create the connection to the DB!")
         End Try
     End Function
 

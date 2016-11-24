@@ -39,15 +39,7 @@ Imports System.Runtime.InteropServices
 
 ' Resuorces
 
-' Multi Languages Editor
-<Assembly: Web.UI.WebResource("SCFramework.MultiLanguagesEditor.css", "text/css", PerformSubstitution:=True)>
-<Assembly: Web.UI.WebResource("SCFramework.MultiLanguagesEditor.js", "text/javascript")>
-
-' Files Manager
-<Assembly: Web.UI.WebResource("SCFramework.FilesManager.css", "text/css", PerformSubstitution:=True)>
-<Assembly: Web.UI.WebResource("SCFramework.FilesManager.js", "text/javascript")>
-
-' Single File Manager
-<Assembly: Web.UI.WebResource("SCFramework.SingleFileManager.css", "text/css", PerformSubstitution:=True)>
-<Assembly: Web.UI.WebResource("SCFramework.SingleFileManager.js", "text/javascript")>
+' Multi Languages HTML Editor
+<Assembly: Web.UI.WebResource("SCFramework.MultilanguageHtmlEditor.css", "text/css", PerformSubstitution:=True)>
+<Assembly: Web.UI.WebResource("SCFramework.MultilanguageHtmlEditor.js", "text/javascript")>
 

@@ -132,7 +132,7 @@ Public Class Bridge
     Public Shared ReadOnly Property Stats As SCFramework.Stats
         Get
             ' Check if null and return the class static reference
-            If Bridge.mStats IsNot Nothing Then Bridge.mStats = New SCFramework.Stats()
+            If Bridge.mStats Is Nothing Then Bridge.mStats = New SCFramework.Stats()
             Return Bridge.mStats
         End Get
     End Property
@@ -141,7 +141,7 @@ Public Class Bridge
     Public Shared ReadOnly Property Configuration As SCFramework.Configuration
         Get
             ' Check if null and return the class static reference
-            If Bridge.mConfiguration IsNot Nothing Then Bridge.mConfiguration = New SCFramework.Configuration()
+            If Bridge.mConfiguration Is Nothing Then Bridge.mConfiguration = New SCFramework.Configuration()
             Return Bridge.mConfiguration
         End Get
     End Property
@@ -150,7 +150,7 @@ Public Class Bridge
     Public Shared ReadOnly Property Languages As SCFramework.Languages
         Get
             ' Check if null and return the class static reference
-            If Bridge.mLanguages IsNot Nothing Then Bridge.mLanguages = New SCFramework.Languages()
+            If Bridge.mLanguages Is Nothing Then Bridge.mLanguages = New SCFramework.Languages()
             Return Bridge.mLanguages
         End Get
     End Property
@@ -159,7 +159,7 @@ Public Class Bridge
     Public Shared ReadOnly Property Translations As SCFramework.Translations
         Get
             ' Check if null and return the class static reference
-            If Bridge.mTranslations IsNot Nothing Then Bridge.mTranslations = New SCFramework.Translations()
+            If Bridge.mTranslations Is Nothing Then Bridge.mTranslations = New SCFramework.Translations()
             Return Bridge.mTranslations
         End Get
     End Property
@@ -168,7 +168,7 @@ Public Class Bridge
     Public Shared ReadOnly Property Files As SCFramework.Files
         Get
             ' Check if null and return the class static reference
-            If Bridge.mFiles IsNot Nothing Then Bridge.mFiles = New SCFramework.Files()
+            If Bridge.mFiles Is Nothing Then Bridge.mFiles = New SCFramework.Files()
             Return Bridge.mFiles
         End Get
     End Property

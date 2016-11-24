@@ -73,6 +73,7 @@
     <Import Include="System.Threading" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Controls\MultilanguageHtmlEditor\MultilanguageHtmlEditor.vb" />
     <Compile Include="Framework\Database\DbSqlBuilder.vb" />
     <Compile Include="Framework\Database\DbClauses.vb" />
     <Compile Include="Framework\Database\DbHelper.vb" />
@@ -1361,7 +1362,8 @@
     <None Include="Resources\mime.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Controls\" />
+    <EmbeddedResource Include="Controls\MultilanguageHtmlEditor\MultilanguageHtmlEditor.css" />
+    <EmbeddedResource Include="Controls\MultilanguageHtmlEditor\MultilanguageHtmlEditor.js" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

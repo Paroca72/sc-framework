@@ -30,6 +30,15 @@ Public MustInherit Class DbHelperExtended
     Private mOrderColumns As List(Of String) = Nothing
 
 
+#Region " CONSTRUCTOR "
+
+    Public Sub New()
+        ' Base class
+        MyBase.New()
+    End Sub
+
+#End Region
+
 #Region " PRIVATES "
 
     ' Check if string is contained in a list of strings

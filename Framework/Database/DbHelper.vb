@@ -130,7 +130,7 @@ Public MustInherit Class DbHelper
             Me.mQuery = value
         End Set
         Get
-            If Me.mQuery Is Nothing Then
+            If Me.mQuery IsNot Nothing Then
                 ' Return the global one if the base is not empty
                 Return Me.mQuery
 

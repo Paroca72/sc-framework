@@ -33,6 +33,9 @@ Public Class Languages
 #Region " CONSTRUCTOR "
 
     Sub New()
+        ' Call the base
+        MyBase.New()
+
         ' Define the order columns
         Me.OrderColumns.Add("[ISDEFAULT] DESC")
         Me.OrderColumns.Add("[TITLE]")
@@ -137,7 +140,9 @@ Public Class Languages
                 ' Lock the data source
                 SyncLock Me.DataSourceLocker
                     ' Get the list of all language codes
-                    Me.mAllLanguagesCodes = (From Row As DataRow In Me.GetSource().AsEnumerable Select Row!CODE).ToArray()
+                    Me.mAllLanguagesCodes = (From Row As DataRow In Me.GetSource().AsEnumerable
+                                             Where Row!VISIBLE = True
+                                             Select Row!CODE).ToArray()
                 End SyncLock
             End If
             ' Return
@@ -233,8 +238,8 @@ Public Class Languages
     End Function
 
     ' Get the source table.
-    Public Shadows Function GetSource() As DataTable
-        Return MyBase.GetSource()
+    Public Shadows Function GetSource(Optional Clauses As DbClauses = Nothing) As DataTable
+        Return MyBase.GetSource(Clauses)
     End Function
 
     ' Add a new languages code.
