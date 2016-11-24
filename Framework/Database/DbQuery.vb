@@ -38,14 +38,21 @@ Public Class DbQuery
 #Region " CONNECTION "
 
     ' Create the connection to database by the passes connection string name
-    Private Function CreateDatabaseConnection(ConnectionString As ConnectionStringSettings) As DbConnection
+    Private Function CreateDatabaseConnection(ConnectionSettings As ConnectionStringSettings) As DbConnection
         Try
+            ' Fix the connection string if the url is relative
+            Dim ConnectionString As String = ConnectionSettings.ConnectionString
+            If ConnectionString.Contains("~/") Then
+                Dim MapPath As String = Web.Hosting.HostingEnvironment.MapPath("~")
+                ConnectionString = ConnectionString.Replace("~/", MapPath).Replace("/", "\")
+            End If
+
             ' Get the factory class
-            Dim Factory As DbProviderFactory = DbProviderFactories.GetFactory(ConnectionString.ProviderName)
+            Dim Factory As DbProviderFactory = DbProviderFactories.GetFactory(ConnectionSettings.ProviderName)
 
             ' Create the connection
             Dim Connection As DbConnection = Factory.CreateConnection()
-            Connection.ConnectionString = ConnectionString.ConnectionString
+            Connection.ConnectionString = ConnectionString
 
             ' Return
             Return Connection

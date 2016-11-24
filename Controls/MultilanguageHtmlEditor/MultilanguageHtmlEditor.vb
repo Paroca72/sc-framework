@@ -45,7 +45,7 @@ Namespace WebControls
                 ' Include the resources
                 Me.IncludeCSSResources()
                 Me.IncludeStaticScriptsResources()
-                'Me.IncludeDynamicScriptsResources()
+                Me.IncludeDynamicScriptsResources()
             End If
         End Sub
 
@@ -170,22 +170,54 @@ Namespace WebControls
         Private Sub IncludeDynamicScriptsResources()
             ' Create the buttons by languages codes
             Dim Clauses As DbClauses = New DbClauses("VISIBLE", DbClauses.ComparerType.Equal, True)
-            Dim Group As String = String.Empty
+            Dim Source As DataTable = Bridge.Languages.GetSource(Clauses)
 
-            For Each Row As DataRow In Bridge.Languages.GetSource(Clauses).Rows
-                If String.IsNullOrEmpty(Group) Then Group &= ", "
-                Group = "{text: '" & Row!TITLE & "'}"
+            Dim Group As String = String.Empty
+            Dim Values As String = String.Empty
+
+            ' Cycle all languages
+            For Index As Integer = 0 To Source.Rows.Count - 1
+                ' Get the row 
+                Dim Row As DataRow = Source.Rows(Index)
+                Dim Code As String = CStr(Row!CODE).Replace("-", "_")
+
+                ' Build the script for the buttons group
+                If Not String.IsNullOrEmpty(Group) Then Group &= ", "
+                Group &= "{" &
+                            "text: '" & Row!TITLE & "'," &
+                            "code: '" & Code & "'," &
+                            "onclick: function () {" &
+                                "save(editor.lastSelection);" &
+                                "toggle(editor.lastSelection);" &
+                                "load(this);" &
+                                "toggle(this);" &
+                                "editor.lastSelection = this;" &
+                            "}," &
+                            "onPostRender: function () {" &
+                                "if (" & Index & " == 0) {" &
+                                    "toggle(this); " &
+                                    "editor.lastSelection = this;" &
+                                "};" &
+                            "}" &
+                         "}"
+
+                ' Build the values holder object
+                If Not String.IsNullOrEmpty(Values) Then Values &= ", "
+                Values &= Code & ": ''"
             Next
 
             ' Create the dynamic script
-            Dim DynamicScript As String = "tinymce.on('addeditor', function (event) {" &
-                                            "event.editor.addButton('Languages', {" &
+            Dim DynamicScript As String = "tinymce.PluginManager.add('scf_languagesbar', function(editor, url) {" &
+                                            "var toggle = function (e) { if (e) e.active(!e.active()); };" &
+                                            "var save = function (e) { if (e) editor.languagesHolder[e.settings.code] = editor.getContent(); };" &
+                                            "var load = function (e) { if (e) editor.setContent(editor.languagesHolder[e.settings.code]); };" &
+                                            "editor.lastSelection = null;" &
+                                            "editor.languagesHolder = {" & Values & "};" &
+                                            "editor.addButton('scf_languagesbar', {" &
                                                 "type: 'buttongroup'," &
-                                                "items: [" &
-                                                    Group &
-                                                "]" &
+                                                "items: [" & Group & "]" &
                                             "});" &
-                                          "}, true);"
+                                          "});"
 
             ' If the page have associated a script manager (Ajax) add the script resource directly by the script manager.
             ' Else register the script by the page client script is not already registered.

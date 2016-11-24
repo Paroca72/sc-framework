@@ -37,7 +37,7 @@ Public Class Languages
         MyBase.New()
 
         ' Define the order columns
-        Me.OrderColumns.Add("[ISDEFAULT] DESC")
+        Me.OrderColumns.Add("[ISDEFAULT]")
         Me.OrderColumns.Add("[TITLE]")
 
         ' Get the source and keep it in memory
