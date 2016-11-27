@@ -485,38 +485,34 @@ Public Class DbQuery
 
     ' Create a generic adapter
     Public Function CreateAdapter(ByVal TableName As String) As DbDataAdapter
-        ' Fix the table name quotes
-        If Not TableName.StartsWith("[") And Not TableName.EndsWith("]") Then
-            TableName = String.Format("[{0}]", TableName)
-        End If
-
-        ' Create a generic selection command
-        Dim SelectSql As String = String.Format("SELECT * FROM {0} WHERE 1 <> 1", TableName)
-
-        ' Create the data adapter and the command builder
-        Dim Adapter As DbDataAdapter = DbProviderFactories.GetFactory(Me.mConnection).CreateDataAdapter()
-        Dim CommandBuilder As DbCommandBuilder = DbProviderFactories.GetFactory(Me.mConnection).CreateCommandBuilder()
-
-        ' Check for exists
-        If Adapter IsNot Nothing And CommandBuilder IsNot Nothing Then
-            ' Set the quotes character
-            CommandBuilder.QuotePrefix = DbSqlBuilder.QUOTE_PREFIX
-            CommandBuilder.QuoteSuffix = DbSqlBuilder.QUOTE_SUFFIX
+        Try
+            ' Get the facotry
+            Dim ProviderFactory As DbProviderFactory = DbProviderFactories.GetFactory(Me.GetProvider)
 
             ' Create the command
-            Dim Command As DbCommand = Me.mConnection.CreateCommand()
-            Command.CommandText = SelectSql
+            Dim Command As DbCommand = ProviderFactory.CreateCommand()
+            Command.Connection = Me.mConnection
+            Command.CommandText = New DbSqlBuilder().Table(TableName).Where(DbClauses.AlwaysFalse).SelectCommand
             Command.CommandTimeout = Me.mCommandTimeout
             Command.Transaction = Me.mTransaction
 
-            ' Assign the command and return the adapter
-            Adapter.SelectCommand = Command
-            Return Adapter
+            ' Create the adapter
+            Dim DataAdapter As DbDataAdapter = ProviderFactory.CreateDataAdapter()
+            DataAdapter.SelectCommand = Command
 
-        Else
-            ' Return nothing
+            ' Associate the command builder to the adapter
+            Dim CommandBuilder As DbCommandBuilder = ProviderFactory.CreateCommandBuilder()
+            CommandBuilder.DataAdapter = DataAdapter
+            CommandBuilder.QuotePrefix = DbSqlBuilder.QUOTE_PREFIX
+            CommandBuilder.QuoteSuffix = DbSqlBuilder.QUOTE_SUFFIX
+
+            ' Return adapter
+            Return DataAdapter
+
+        Catch ex As Exception
+            ' If have some errors
             Return Nothing
-        End If
+        End Try
     End Function
 
     ' Update the database

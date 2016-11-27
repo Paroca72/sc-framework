@@ -28,6 +28,9 @@ Public MustInherit Class DataSourceHelper
     Private mStaticConcurrentAccessSafeMode = False
     Private mSessionID As String = Nothing
 
+    Private mAddNewColumnWhenTranslate As Boolean = True
+    Private mTranslatedColumnPrefix As String = "TRANS_"
+
 
 #Region " CONSTRUCTOR "
 
@@ -71,6 +74,44 @@ Public MustInherit Class DataSourceHelper
             ' Try to remove
             Me.mSubordinates.Remove(Subordinate)
         End If
+    End Sub
+
+#End Region
+
+#Region " MULTILANGUAGES "
+
+    ' Translate one column of the source
+    Private Sub DoTranslateColumn(Source As DataTable, ColumnName As String, Manager As SCFramework.Multilanguages)
+        ' Define the destination column name
+        Dim DestinationColumn As String = ColumnName
+
+        ' If must be create a new column
+        If Me.mAddNewColumnWhenTranslate Then
+            ' Create the new destination column name and if not exists create the new column
+            DestinationColumn = Me.mTranslatedColumnPrefix & ColumnName
+            If Not Source.Columns.Contains(DestinationColumn) Then
+                Source.Columns.Add(DestinationColumn)
+            End If
+        End If
+
+        ' Get all the translations
+        ' TODO: check
+        Dim Translations As Dictionary(Of String, String) = Manager.GetSource(Bridge.Languages.Current)
+
+        ' Cycle all rows 
+        For Each Row As DataRow In Source.Rows
+            ' Translate
+            Row(DestinationColumn) = Translations(ColumnName)
+        Next
+    End Sub
+
+    ' Translate many columns of the source
+    Private Sub DoTranslateColumns(Source As DataTable, Columns As List(Of String), Manager As SCFramework.Multilanguages)
+        ' Cicle all the columns to translate
+        For Each Column As String In Columns
+            ' Translate the single column
+            Me.DoTranslateColumn(Source, Column, Manager)
+        Next
     End Sub
 
 #End Region
@@ -158,6 +199,7 @@ Public MustInherit Class DataSourceHelper
     Private Function SelectDataSource(Clauses As SCFramework.DbClauses) As DataTable
         ' If the cluases not changed return the keep in memory source
         If Not Me.ClausesIsChanged(Clauses) And Not Me.mStaticConcurrentAccessSafeMode Then
+            ' Return the current data source
             Return Me.mDataSource
 
         Else
@@ -193,9 +235,13 @@ Public MustInherit Class DataSourceHelper
         If Me.PrimaryKeys.Count > 0 Then SCFramework.Utils.DataTable.SetPrimaryKeys(Source, Me.PrimaryKeys.ToArray)
         If Me.AutoNumbers.Count > 0 Then SCFramework.Utils.DataTable.SetAutoIncrements(Source, Me.AutoNumbers.ToArray)
 
-        ' TODO: all other columns
+        ' Multilanguages columns
+        Me.DoTranslateColumns(Source, Me.TranslateColumns, New SCFramework.Translations())
+        Me.DoTranslateColumns(Source, Me.ImageColumns, New SCFramework.Files())
+        Me.DoTranslateColumns(Source, Me.FileColumns, New SCFramework.Files())
 
-        ' Return
+        ' Accept the changes and return the source
+        Source.AcceptChanges()
         Return Source
     End Function
 
@@ -321,7 +367,9 @@ Public MustInherit Class DataSourceHelper
 
 #Region " PUBLIC "
 
-    ' Set the data table as a source filtered by where clausole
+    ' Set the data table as a source filtered by where clausole.
+    ' If KeepInMemory is true the classes will be managed in mamory and all methods will be applied on the table stored.
+    ' Else when you will use a methos as Insert, Delete or Update will have effect directly on the database.
     Public Overridable Function GetSource(Optional Clauses As SCFramework.DbClauses = Nothing,
                                           Optional KeepInMemory As Boolean = False) As DataTable
         ' Hold the source
@@ -349,84 +397,102 @@ Public MustInherit Class DataSourceHelper
         End If
 
         Try
-            ' Get the filtered table
-            Dim Source As DataTable = Me.GetSource(Clauses)
+            ' Select the case 
+            Select Case Me.IsMemoryManaged
+                Case True
+                    '--------------------------------------------------------------------------
+                    ' MEMORY MANAGED
 
-            ' Cycle subortdinates for delete the references
-            For Each Subordinate As DataSourceHelper In Me.mSubordinates
-                ' Cycle rows and for each row to delete extract the pairs key
-                For Each Row As DataRow In Source.Rows
-                    ' Exctract the current primary keys and delete the items inside the subordinate
-                    Dim CurrentClauses As DbClauses = DbClauses.Empty.And(Me.ExtractLocalKeysPairs(Row), DbClauses.ComparerType.Equal)
-                    Subordinate.Delete(CurrentClauses)
-                Next
-            Next
+                    ' Get the filtered source table
+                    Dim Source As DataTable = Me.SelectDataSource(Clauses)
 
-            ' Lock the data source
-            SyncLock Me.DataSourceLocker
-                ' Delete all row in the view
-                For Each Row As DataRow In Source.Rows
-                    ' Delete and store the current row
-                    Me.AddSessionID(Row)
-                    Row.Delete()
-                Next
-            End SyncLock
+                    ' Cycle subortdinates for delete the references
+                    For Each Subordinate As DataSourceHelper In Me.mSubordinates
+                        ' Cycle rows and for each row to delete extract the pairs key
+                        For Each Row As DataRow In Source.Rows
+                            ' Exctract the current primary keys and delete the items inside the subordinate
+                            Dim CurrentClauses As DbClauses = DbClauses.Empty.And(Me.ExtractLocalKeysPairs(Row), DbClauses.ComparerType.Equal)
+                            Subordinate.Delete(CurrentClauses)
+                        Next
+                    Next
 
-            ' If if not memory managed update the database
-            If Not Me.IsMemoryManaged Then
-                Me.UpdateDatabase(Source)
-            End If
+                    ' Lock the data source
+                    SyncLock Me.DataSourceLocker
+                        ' Delete all row in the view
+                        For Each Row As DataRow In Source.Rows
+                            ' Delete and store the current row
+                            Me.AddSessionID(Row)
+                            Row.Delete()
+                        Next
+                    End SyncLock
 
-            ' Return the deleted rows count
-            Return Source.Rows.Count
+                    ' Return the deleted rows count
+                    Return Source.Rows.Count
 
+                Case False
+                    '--------------------------------------------------------------------------
+                    ' DATABASE MANAGED
+
+                    ' Access direct to the database method
+                    Return MyBase.Delete(Clauses)
+
+            End Select
         Catch ex As Exception
             ' If an error roll back and propagate the exception
-            Me.RejectChanges()
+            If Me.IsMemoryManaged Then Me.RejectChanges()
             Throw ex
         End Try
     End Function
 
     ' Insert command
     Public Overrides Function Insert(Values As Dictionary(Of String, Object)) As Long
-        ' Get the filtered table and create the new record
-        Dim Source As DataTable = Me.GetSource(SCFramework.DbClauses.AlwaysFalse)
-        Dim NewRow As DataRow = Me.mDataSource.NewRow
-
         Try
-            ' Add the session is column to the values list if needed
-            Me.AddSessionID(Values)
+            ' Select the case 
+            Select Case Me.IsMemoryManaged
+                Case True
+                    '--------------------------------------------------------------------------
+                    ' MEMORY MANAGED
 
-            ' Fill the row cycling all the field inside the values list.
-            For Each Field As String In Values.Keys
-                ' If the field exists write the value
-                If Me.mDataSource.Columns.Contains(Field) Then
-                    NewRow(Field) = Values(Field)
-                End If
-            Next
+                    ' Add the session is column to the values list if needed
+                    Me.AddSessionID(Values)
 
-            ' Insert the new ID
-            Me.mDataSource.Rows.Add(NewRow)
+                    ' Create the new record from the current datatable structure
+                    Dim NewRow As DataRow = Me.mDataSource.NewRow
 
-            ' If if not memory managed update the database
-            If Not Me.IsMemoryManaged Then
-                Me.UpdateDatabase(Source)
-            End If
+                    ' Fill the row cycling all the field inside the values list.
+                    For Each Field As String In Values.Keys
+                        ' If the field exists write the value
+                        If Me.mDataSource.Columns.Contains(Field) Then
+                            NewRow(Field) = Values(Field)
+                        End If
+                    Next
 
-            ' Check if exists an identity field
-            Dim IdentityField As String = Me.ExtractIdentityField(Source)
-            If IdentityField IsNot Nothing And IsNumeric(NewRow(IdentityField)) Then
-                ' Return the identity field value
-                Return NewRow(IdentityField)
+                    ' Insert the new ID
+                    Me.mDataSource.Rows.Add(NewRow)
 
-            Else
-                ' Else return nothing
-                Return -1
-            End If
+                    ' Check if exists an identity field
+                    Dim IdentityField As String = Me.ExtractIdentityField(Me.mDataSource)
+                    If IdentityField IsNot Nothing AndAlso IsNumeric(NewRow(IdentityField)) Then
+                        ' Return the identity field value
+                        Return NewRow(IdentityField)
+
+                    Else
+                        ' Else return nothing
+                        Return -1
+                    End If
+
+                Case False
+                    '--------------------------------------------------------------------------
+                    ' DATABASE MANAGED
+
+                    ' Access direct to the database method
+                    Return MyBase.Insert(Values)
+
+            End Select
 
         Catch ex As Exception
             ' If an error roll back and propagate the exception
-            Source.RejectChanges()
+            If Me.IsMemoryManaged Then Me.RejectChanges()
             Throw ex
         End Try
     End Function
@@ -438,38 +504,48 @@ Public MustInherit Class DataSourceHelper
             Throw New Exception("This command will update all row in the table!")
         End If
 
-        ' Get the filtered table
-        Dim Source As DataTable = Me.GetSource(Clauses)
-
         Try
-            ' Add the session is column to the values list if needed
-            Me.AddSessionID(Values)
+            ' Select the case 
+            Select Case Me.IsMemoryManaged
+                Case True
+                    '--------------------------------------------------------------------------
+                    ' MEMORY MANAGED
 
-            ' Lock the data source
-            SyncLock Me.DataSourceLocker
-                ' Cycle all rows in the view
-                For Each Row As DataRow In Source.Rows
-                    ' Fill the row cycling all the field inside the values list.
-                    For Each Field As String In Values.Keys
-                        ' If the field exists write the value
-                        If Me.mDataSource.Columns.Contains(Field) Then
-                            Row(Field) = Values(Field)
-                        End If
-                    Next
-                Next
-            End SyncLock
+                    ' Add the session is column to the values list if needed
+                    Me.AddSessionID(Values)
 
-            ' If if not memory managed update the database
-            If Not Me.IsMemoryManaged Then
-                Me.UpdateDatabase(Source)
-            End If
+                    ' Get the filtered source table
+                    Dim Source As DataTable = Me.SelectDataSource(Clauses)
 
-            ' Return the updated rows count
-            Return Source.Rows.Count
+                    ' Lock the data source
+                    SyncLock Me.DataSourceLocker
+                        ' Cycle all rows in the view
+                        For Each Row As DataRow In Source.Rows
+                            ' Fill the row cycling all the field inside the values list.
+                            For Each Field As String In Values.Keys
+                                ' If the field exists write the value
+                                If Source.Columns.Contains(Field) Then
+                                    Row(Field) = Values(Field)
+                                End If
+                            Next
+                        Next
+                    End SyncLock
+
+                    ' Return the updated rows count
+                    Return Source.Rows.Count
+
+                Case False
+                    '--------------------------------------------------------------------------
+                    ' DATABASE MANAGED
+
+                    ' Access direct to the database method
+                    Return MyBase.Update(Values, Clauses)
+
+            End Select
 
         Catch ex As Exception
             ' If an error roll back and propagate the exception
-            Source.RejectChanges()
+            If Me.IsMemoryManaged Then Me.RejectChanges()
             Throw ex
         End Try
     End Function
@@ -479,9 +555,8 @@ Public MustInherit Class DataSourceHelper
         ' Only if work in memory
         If Not Me.IsMemoryManaged Then Exit Sub
 
-        ' Get the current query object
+        ' Get the current query object and determine if must manage the transaction
         Dim Query As SCFramework.DbQuery = Me.Query
-        ' Determine if must manage the transaction
         Dim TransactionOwner As Boolean = Not Query.InTransaction
 
         Try
@@ -505,7 +580,6 @@ Public MustInherit Class DataSourceHelper
             ' Rollback the transaction is needed and propagate the exception
             If TransactionOwner Then Query.RollBackTransaction()
             Throw ex
-
         End Try
     End Sub
 

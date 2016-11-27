@@ -140,9 +140,9 @@ Public Class Languages
                 ' Lock the data source
                 SyncLock Me.DataSourceLocker
                     ' Get the list of all language codes
-                    Me.mAllLanguagesCodes = (From Row As DataRow In Me.GetSource().AsEnumerable
+                    Me.mAllLanguagesCodes = (From Row In Me.GetSource().AsEnumerable
                                              Where Row!VISIBLE = True
-                                             Select Row!CODE).ToArray()
+                                             Select CStr(Row!CODE)).ToArray()
                 End SyncLock
             End If
             ' Return

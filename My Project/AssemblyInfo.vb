@@ -39,7 +39,6 @@ Imports System.Runtime.InteropServices
 
 ' Resuorces
 
-' Multi Languages HTML Editor
-<Assembly: Web.UI.WebResource("SCFramework.MultilanguageHtmlEditor.css", "text/css", PerformSubstitution:=True)>
-<Assembly: Web.UI.WebResource("SCFramework.MultilanguageHtmlEditor.js", "text/javascript")>
+' Multi Languages Editor
+<Assembly: Web.UI.WebResource("SCFramework.MultilanguageEditor.js", "text/javascript")>
 

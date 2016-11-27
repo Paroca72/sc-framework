@@ -189,8 +189,9 @@ Public Class DbClauses
                 End If
 
                 ' If requested create sql for filter force the provider to OldDb.
-                Dim Provider As String = IIf(ForFilter, "System.Data.OleDb", "System.Data.Undefined")
+                Dim Provider As String = IIf(ForFilter, "System.Data.OleDb", Bridge.Query.GetProvider())
                 Dim SqlBuilder As DbSqlBuilder = New DbSqlBuilder(Provider)
+                SqlBuilder.StringEmptyIsNULL = False
 
                 ' Append the new clause. 
                 Filter &= String.Format("{0} {1} {2}",

@@ -30,6 +30,11 @@ Public MustInherit Class DbHelper
 #Region " CONSTRUCTOR "
 
     Public Sub New()
+        ' Checke for the table name
+        If Utils.String.IsEmptyOrWhite(Me.GetTableName()) Then
+            Throw New Exception("Define the table name in the first step.")
+        End If
+
         ' Analize
         Me.OnAnalizeTable()
     End Sub
@@ -47,7 +52,7 @@ Public MustInherit Class DbHelper
         Dim Table As DataTable = CustomConnection.GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Primary_Keys,
                                                                       New Object() {Nothing, Nothing, Me.GetTableName()})
         For Each Row As DataRow In Table.Rows
-            ' TODO: understand if automunber
+            ' TODO: understand if automunber too
             mPrimaryKeysColumns.Add(Row!COLUMN_NAME)
         Next
 
@@ -55,14 +60,16 @@ Public MustInherit Class DbHelper
         Table = CustomConnection.GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Columns,
                                                      New Object() {Nothing, Nothing, Me.GetTableName(), Nothing})
         For Each Row As DataRow In Table.Rows
-            ' Auto Number
+            ' Check the type
             If Row!DATA_TYPE = OleDb.OleDbType.Integer AndAlso
                Row!COLUMN_FLAGS = 90 Then
+                ' Auto Number
                 Me.mAutoNumberColumns.Add(Row!COLUMN_NAME)
-            End If
 
-            ' Writable
-            Me.mWritableColumns.Add(Row!COLUMN_NAME)
+            Else
+                ' Writable
+                Me.mWritableColumns.Add(Row!COLUMN_NAME)
+            End If
         Next
     End Sub
 
@@ -81,18 +88,19 @@ Public MustInherit Class DbHelper
         ' Find the infos table
         Dim Table As DataTable = Reader.GetSchemaTable()
         For Each Row As DataRow In Table.Rows
-            ' Primary key
+            ' Primary key or incremental or writable
             If CBool(Row!IsKey) And CBool(Row!IsUnique) Then
+                ' Primary
                 Me.mPrimaryKeysColumns.Add(Row!ColumnName)
-            End If
 
-            ' Autoincrement
-            If CBool(Row!IsIdentity) And CBool(Row!IsAutoIncrement) Then
+            ElseIf CBool(Row!IsIdentity) And CBool(Row!IsAutoIncrement) Then
+                ' Incremental
                 Me.mAutoNumberColumns.Add(Row!ColumnName)
-            End If
 
-            ' Writable
-            Me.mWritableColumns.Add(Row!ColumnName)
+            Else
+                ' Writable
+                Me.mWritableColumns.Add(Row!ColumnName)
+            End If
         Next
     End Sub
 
@@ -129,6 +137,13 @@ Public MustInherit Class DbHelper
         ' Close the connection to database
         If MustBeOpen Then
             Connection.Close()
+        End If
+
+        ' Check if the table exists
+        If Me.mPrimaryKeysColumns.Count = 0 And
+                Me.mAutoNumberColumns.Count = 0 And
+                Me.mWritableColumns.Count = 0 Then
+            Throw New Exception("The table not exists.")
         End If
     End Sub
 

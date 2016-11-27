@@ -36,7 +36,7 @@ Public MustInherit Class DbHelperExtended
         ' Base
         MyBase.New()
 
-        ' Analize the table
+        ' Analize the table 
         Me.OnAnalizeTable()
     End Sub
 
@@ -75,31 +75,34 @@ Public MustInherit Class DbHelperExtended
         Dim CustomConnection As OleDb.OleDbConnection = CType(Connection, OleDb.OleDbConnection)
 
         ' Translations, Images and Orders
-        Dim Table As DataTable = CustomConnection.GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Columns, _
+        Dim Table As DataTable = CustomConnection.GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Columns,
                                                                       New Object() {Nothing, Nothing, Me.GetViewName(), Nothing})
         For Each Row As DataRow In Table.Rows
-            ' Translations
-            If Row!DATA_TYPE = OleDb.OleDbType.WChar AndAlso _
-               Row!CHARACTER_MAXIMUM_LENGTH = 32 Then
-                Me.mTranslateColumns.Add(Row!COLUMN_NAME)
-            End If
+            ' Column name
+            Dim ColumnName As String = Row!COLUMN_NAME
 
-            ' Images
-            If Row!DATA_TYPE = OleDb.OleDbType.Integer AndAlso _
-               Me.Contains(Me.mPossibleImageColumnsName, Row!COLUMN_NAME) Then
-                Me.mImageColumns.Add(Row!COLUMN_NAME)
-            End If
+            ' Check is not a primary or incremental key
+            If Not Me.PrimaryKeys.Contains(ColumnName) And Not Me.AutoNumbers.Contains(ColumnName) Then
+                ' Translations
+                If Row!DATA_TYPE = OleDb.OleDbType.WChar AndAlso Row!CHARACTER_MAXIMUM_LENGTH = 32 Then
+                    Me.mTranslateColumns.Add(ColumnName)
+                End If
 
-            ' Files
-            If Row!DATA_TYPE = OleDb.OleDbType.Integer AndAlso _
-               Me.Contains(Me.mPossibleFileColumnsName, Row!COLUMN_NAME) Then
-                Me.mFileColumns.Add(Row!COLUMN_NAME)
-            End If
+                ' Images
+                If Row!DATA_TYPE = OleDb.OleDbType.Integer AndAlso Me.Contains(Me.mPossibleImageColumnsName, ColumnName) Then
+                    Me.mImageColumns.Add(ColumnName)
+                End If
 
-            ' Order
-            If (Row!DATA_TYPE = OleDb.OleDbType.Integer Or Row!DATA_TYPE = OleDb.OleDbType.SmallInt) AndAlso _
-               Me.Contains(Me.mPossibleOrderColumnsName, Row!COLUMN_NAME) Then
-                Me.mOrderColumns.Add(Row!COLUMN_NAME)
+                ' Files
+                If Row!DATA_TYPE = OleDb.OleDbType.Integer AndAlso Me.Contains(Me.mPossibleFileColumnsName, ColumnName) Then
+                    Me.mFileColumns.Add(ColumnName)
+                End If
+
+                ' Order
+                If (Row!DATA_TYPE = OleDb.OleDbType.Integer Or Row!DATA_TYPE = OleDb.OleDbType.SmallInt) AndAlso
+                    Me.Contains(Me.mPossibleOrderColumnsName, ColumnName) Then
+                    Me.mOrderColumns.Add(ColumnName)
+                End If
             End If
         Next
     End Sub
@@ -113,34 +116,39 @@ Public MustInherit Class DbHelperExtended
             .SelectCommand
 
         ' Find the reader
-        Dim Command As SqlCommand = New SqlCommand(SQL, Connection)
+        Dim Command As SqlCommand = New SqlCommand(Sql, Connection)
         Dim Reader As SqlDataReader = Command.ExecuteReader(CommandBehavior.KeyInfo)
 
         ' Find the infos table
         Dim Table As DataTable = Reader.GetSchemaTable()
         For Each Row As DataRow In Table.Rows
-            ' Translations
-            If Row!DataTypeName = GetType(System.String).Name AndAlso _
-               Row!ColumnSize = 32 Then
-                Me.mTranslateColumns.Add(Row!ColumnName)
-            End If
+            ' Column name
+            Dim ColumnName As String = Row!COLUMN_NAME
 
-            ' Images
-            If Row!DataTypeName = GetType(System.Int32).Name AndAlso _
-               Me.Contains(Me.mPossibleImageColumnsName, Row!ColumnName) Then
-                Me.mImageColumns.Add(Row!ColumnName)
-            End If
+            ' Check is not a primary or incremental key
+            If Not Me.PrimaryKeys.Contains(ColumnName) And Not Me.AutoNumbers.Contains(ColumnName) Then
+                ' Translations
+                If Row!DataType = GetType(System.String).Name AndAlso Row!ColumnSize = 32 Then
+                    Me.mTranslateColumns.Add(ColumnName)
+                End If
 
-            ' Files
-            If Row!DataTypeName = GetType(System.Int32).Name AndAlso _
-               Me.Contains(Me.mPossibleFileColumnsName, Row!ColumnName) Then
-                Me.mFileColumns.Add(Row!ColumnName)
-            End If
+                ' Images
+                If Row!DataType = GetType(System.Int32).Name AndAlso
+                   Me.Contains(Me.mPossibleImageColumnsName, ColumnName) Then
+                    Me.mImageColumns.Add(ColumnName)
+                End If
 
-            ' Order
-            If (Row!DataTypeName = GetType(System.Int32).Name Or Row!DataTypeName = GetType(System.Int16).Name) AndAlso _
-               Me.Contains(Me.mPossibleOrderColumnsName, Row!ColumnName) Then
-                Me.mOrderColumns.Add(Row!ColumnName)
+                ' Files
+                If Row!DataType = GetType(System.Int32).Name AndAlso
+                   Me.Contains(Me.mPossibleFileColumnsName, ColumnName) Then
+                    Me.mFileColumns.Add(ColumnName)
+                End If
+
+                ' Order
+                If (Row!DataType = GetType(System.Int32).Name Or Row!DataType = GetType(System.Int16).Name) AndAlso
+                   Me.Contains(Me.mPossibleOrderColumnsName, ColumnName) Then
+                    Me.mOrderColumns.Add(ColumnName)
+                End If
             End If
         Next
     End Sub

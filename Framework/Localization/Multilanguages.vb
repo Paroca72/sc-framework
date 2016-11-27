@@ -13,9 +13,11 @@
 
 #Region " CLEANER "
 
+    Private Const DELETE_AFTER As Integer = 4
+
     Private Shared mCleanerThread As Thread = Nothing
     Private mCleanerInterval As TimeSpan = New TimeSpan(0, 30, 0)
-    Private Const DELETE_AFTER As Integer = 4
+
 
     ' Launch the cleaning cycle
     Private Sub StartCleaning()
@@ -94,12 +96,11 @@
 
 #Region " PUBLIC "
 
-    ' Get the source
     Public Shadows Function GetSource(Language As String) As Dictionary(Of String, String)
         ' Get the source
-        Dim Clauses As DbClauses = New DbClauses("TO_DELETE", DbClauses.ComparerType.Different, Nothing) _
+        Dim Clauses As DbClauses = New DbClauses("TO_DELETE", DbClauses.ComparerType.Equal, Nothing) _
             .And(New DbClauses("LANGUAGE", DbClauses.ComparerType.Equal, Language).Or("LANGUAGE", DbClauses.ComparerType.Equal, Bridge.Languages.Default))
-        Dim Source As DataTable = MyBase.GetSource(Clauses, True)
+        Dim Source As DataTable = MyBase.GetSource(Clauses)
 
         ' Merge the requested language with the default one for fill the empty translations
         Return (From Row In Source.AsEnumerable() Select Row!KEY, Row!VALUE) _
@@ -114,19 +115,50 @@
         Dim Clauses As DbClauses = New DbClauses()
         Clauses.And("KEY", DbClauses.ComparerType.Equal, Key)
         Clauses.And("LANGUAGE", DbClauses.ComparerType.Equal, Language)
-        Clauses.And("TO_DELETE", DbClauses.ComparerType.Different, Nothing)
+        Clauses.And("TO_DELETE", DbClauses.ComparerType.Equal, Nothing)
 
         ' Get the filtered source
         Dim Source As DataTable = MyBase.GetSource(Clauses)
 
         ' Check if have a result
         If Source.Rows.Count > 0 Then
-            ' Return the first
-            Return Source.Rows(0)!VALUE
-        Else
-            ' Else
-            Return Nothing
+            ' Return the first if not dbnull
+            Dim Value As Object = Source.Rows(0)!VALUE
+            If Not IsDBNull(Value) Then Return Value
         End If
+
+        ' Else
+        Return Nothing
+    End Function
+
+    ' Get the value in all languages
+    Public Function GetValues(Key As String) As Dictionary(Of String, String)
+        ' Create the clauses
+        Dim Clauses As DbClauses = New DbClauses()
+        Clauses.And("KEY", DbClauses.ComparerType.Equal, Key)
+        Clauses.And("TO_DELETE", DbClauses.ComparerType.Equal, Nothing)
+
+        ' Get the filtered source
+        Dim Source As DataTable = MyBase.GetSource(Clauses)
+        Dim Values As Dictionary(Of String, String) = New Dictionary(Of String, String)
+
+        ' Check if have a result
+        For Each Row As DataRow In Source.Rows
+            ' Holders
+            Dim CurrentKey As String = Row!LANGUAGE
+            Dim CurrentValue As String = String.Empty
+
+            ' Fix the value
+            If Not IsDBNull(Row!VALUE) Then
+                CurrentValue = Row!VALUE
+            End If
+
+            ' Add the value
+            Values.Add(CurrentKey, CurrentValue)
+        Next
+
+        ' Return 
+        Return Values
     End Function
 
     ' Insert command
@@ -157,12 +189,12 @@
     End Sub
 
     ' Update command
-    Public Shadows Sub Update(Key As String, Value As String, Language As String)
+    Public Shadows Function Update(Key As String, Value As String, Language As String) As Boolean
         ' Get the old value if exists
         Dim OldValue As String = Me.GetValue(Key, Language)
 
         ' Check if exists
-        If OldValue IsNot Nothing Then
+        If OldValue IsNot Nothing AndAlso OldValue <> Value Then
             ' Insert a new row with the old value to delete
             Dim NewGuid As String = Utils.GUID.GuidToString
             Me.Insert(NewGuid, OldValue, Language)
@@ -179,8 +211,8 @@
         Values.Add("VALUE", Value)
 
         ' Call the base method
-        MyBase.Update(Values, Clauses)
-    End Sub
+        Return MyBase.Update(Values, Clauses) > 0
+    End Function
 
 #End Region
 

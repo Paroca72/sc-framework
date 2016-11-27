@@ -122,8 +122,48 @@ Namespace Utils
             Return String.IsNullOrEmpty(Value) Or String.IsNullOrWhiteSpace(Value)
         End Function
 
-    End Class
+        ' Escape JSON String
+        Public Shared Function EscapeJSON(Value As String, AddDoubleQuotes As Boolean) As String
+            If String.IsNullOrEmpty(Value) Then
+                Return IIf(AddDoubleQuotes, """""", String.Empty)
+            End If
 
+            Dim NeedEncode As Boolean = False
+
+            For Index As Integer = 0 To Value.Length - 1
+                Dim Ordinal = Asc(Value(Index))
+
+                If Ordinal >= 0 And Ordinal <= 31 Or Ordinal = 34 Or
+                    Ordinal = 39 Or Ordinal = 60 Or Ordinal = 62 Or Ordinal = 92 Then
+                    NeedEncode = True
+                    Exit For
+                End If
+            Next
+
+            If Not NeedEncode Then Return IIf(AddDoubleQuotes, """" + Value + """", Value)
+
+            Dim SB As StringBuilder = New System.Text.StringBuilder()
+            If AddDoubleQuotes Then SB.Append("""")
+
+            For Index As Integer = 0 To Value.Length - 1
+                Select Case Asc(Value(Index))
+                    Case 8 : SB.Append("\b")
+                    Case 9 : SB.Append("\t")
+                    Case 10 : SB.Append("\n")
+                    Case 12 : SB.Append("\f")
+                    Case 13 : SB.Append("\r")
+                    Case 34 : SB.Append("\""")
+                    Case 92 : SB.Append("\\")
+                    Case Else : SB.Append(Value(Index))
+                End Select
+            Next
+
+            If AddDoubleQuotes Then SB.Append("""")
+
+            Return SB.ToString()
+        End Function
+
+    End Class
 
     '------------------------------------------------------------------------------------------
     ' HTML

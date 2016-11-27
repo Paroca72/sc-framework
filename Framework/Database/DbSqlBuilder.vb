@@ -53,7 +53,45 @@ Public Class DbSqlBuilder
 
 #Region " PROPERTIES "
 
-    ' TODO: all properties
+    ' Force to quote fields
+    Public Property ForceQuote As Boolean
+        Get
+            Return Me.mForceQuote
+        End Get
+        Set(value As Boolean)
+            Me.mForceQuote = value
+        End Set
+    End Property
+
+    ' Consider the empty string as a NULL db value
+    Public Property StringEmptyIsNULL As Boolean
+        Get
+            Return Me.mStringEmptyIsNULL
+        End Get
+        Set(value As Boolean)
+            Me.mStringEmptyIsNULL = value
+        End Set
+    End Property
+
+    ' Consider the date min value as a NULL db value
+    Public Property DateMinIsNULL As Boolean
+        Get
+            Return Me.mDateMinIsNULL
+        End Get
+        Set(value As Boolean)
+            Me.mDateMinIsNULL = value
+        End Set
+    End Property
+
+    ' Set the database culture
+    Public Property DataBaseCulture As Globalization.CultureInfo
+        Get
+            Return Me.mDataBaseCulture
+        End Get
+        Set(value As Globalization.CultureInfo)
+            Me.mDataBaseCulture = value
+        End Set
+    End Property
 
 #End Region
 
