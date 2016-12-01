@@ -1,4 +1,43 @@
-﻿Public MustInherit Class Multilanguages
+﻿'*************************************************************************************************
+' 
+' [SCFramework]
+' Multilanguages
+' di Samuele Carassai
+'
+' Version 5.0.0
+' Updated 27/11/2016
+'
+'
+' Multilanguages manager class provide the methods to manage the framework multilanguages table.
+' This classes inherits from DataSourceHelper but is ALWAYS memory managed. 
+' Some base methods are shadowed or overridden to avoid to change the management mode.
+' Since memory managed you must remember to call the AcceptChanges method to confirm
+' every changes.
+'
+' Tha GetSource method will return a marge of values between the requested language (passed in
+' the paramenters) and the default language retrieved from the static Languages class.
+'
+' The table structure will be very simple:
+' - KEY         (PK)
+' - LANGUAGES   (PK) 
+' - VALUE
+' - TO_DELETE
+'
+' Please note that this class shadows the base delete methods to avoid to the user to delete
+' directly the record from the server. For many reason the only way to delete a record is
+' throught the DELETE_TO column. Once set the record will be delete after a standard time.
+' The main reason of this mode to delete is in case of related table using some columns linked 
+' to a multilanguages table and have some errors during the procedure of deleting will permit to 
+' the user To rollback to the previous status.
+' For example if the multilanguages table is a files table the phisical file will be delete
+' posticipate avoiding to lost data in case of roll-back.
+' For the same reason the update command will be insert the old value as a new value marked to
+' delete and after that will update the old record values.
+'
+'*************************************************************************************************
+
+
+Public MustInherit Class Multilanguages
     Inherits DataSourceHelper
 
 
@@ -7,13 +46,16 @@
     Sub New()
         ' Start cleaning
         Me.StartCleaning()
+
+        ' Force the class as memory managed
+        MyBase.GetSource(Nothing, True)
     End Sub
 
 #End Region
 
 #Region " CLEANER "
 
-    Private Const DELETE_AFTER As Integer = 4
+    Private Const DELETE_AFTER_MINUTES As Integer = 4 * 60
 
     Private Shared mCleanerThread As Thread = Nothing
     Private mCleanerInterval As TimeSpan = New TimeSpan(0, 30, 0)
@@ -29,21 +71,15 @@
         End If
     End Sub
 
+
     ' Execute the cleaning
     Private Sub CycleCleaning()
         ' Loop
         While Multilanguages.mCleanerThread.ThreadState <> Threading.ThreadState.Stopped
             Try
-                ' Get the source
-                Dim Source As DataTable = MyBase.GetSource().Clone()
-                Source.AcceptChanges()
-
                 ' Clean all cases
-                Me.SyncWithLanguagesTable(Source)
-                Me.ElaborateToDelete(Source)
-
-                ' Save all
-                Me.Query.UpdateDatabase(Source)
+                Me.SyncWithLanguagesTable()
+                Me.ApplyToDelete()
 
             Catch ex As ThreadAbortException
                 ' Reset the abort
@@ -60,42 +96,45 @@
         End While
     End Sub
 
+
     ' Sync the current languages with the code include inside this table.
     ' All the rows with code not inside the current languages list will be mark as TO_DELETE.
-    Private Sub SyncWithLanguagesTable(Source As DataTable)
-        ' Extract all the codes
-        Dim CodesIn() As String = (From Row In Source.AsEnumerable()
-                                   Where IsDBNull(Row!TO_DELETE)
-                                   Select Row!LANGUAGE).Distinct()
-        ' Start to check
-        For Each Code As String In CodesIn
-            ' Check if wihtin the languages list
-            If Not Bridge.Languages.AllCodes.Contains(Code) Then
-                ' Mark all row as to deleted
-                Dim Filtered As List(Of DataRow) = (From Row In Source
-                                                    Where Row!LANGUAGE = Code
-                                                    Select Row).ToList()
-                Filtered.ForEach(Sub(Row) Row!TO_DELETE = Now)
-            End If
-        Next
+    Private Sub SyncWithLanguagesTable()
+        ' Serialize the languages codes and create the clauses
+        Dim Codes As String = String.Join(", ", Bridge.Languages.AllCodes(False))
+        Dim Clauses As DbClauses = New DbClauses("CODE", DbClauses.ComparerType.NotIn, Codes)
+
+        ' Create the SQL for update the rows not inside the codes and execute it
+        Dim SQL As DbSqlBuilder = New DbSqlBuilder() _
+            .Table(Me.GetTableName()) _
+            .Update(Me.ToValues("TO_DELETE", Now)) _
+            .Where(Clauses)
+        Me.Query.Exec(SQL.UpdateCommand)
     End Sub
 
-    ' Clean the rows marked as TO_DELETE
-    Protected Overridable Function ElaborateToDelete(Source As DataTable) As List(Of DataRow)
-        ' Get all rows to delete and mark delete them
-        Dim Filtered As List(Of DataRow) = (From Row In Source
-                                            Where Row!TO_DELETE < Now.AddHours(-Multilanguages.DELETE_AFTER)
-                                            Select Row).ToList()
-        Filtered.ForEach(Sub(Row) Row.Delete())
 
-        ' Return to delete
-        Return Filtered
+    ' Clean the rows marked as TO_DELETE if needed
+    Protected Overridable Function ApplyToDelete() As String()
+        ' Create the SQL builder
+        Dim Clauses As DbClauses = New DbClauses("TO_DELETE", DbClauses.ComparerType.Minor, Now.AddMinutes(Multilanguages.DELETE_AFTER_MINUTES))
+        Dim SQL As DbSqlBuilder = New DbSqlBuilder() _
+            .Table(Me.GetTableName()) _
+            .Select("VALUE") _
+            .Where(Clauses)
+
+        ' Get the list of the values to delete
+        Dim Table As DataTable = Me.Query.Table(SQL.SelectCommand)
+        ApplyToDelete = (From Row In Table Select CStr(Row!VALUE)).ToArray()
+
+        ' Delete from the database
+        Me.Query.Exec(SQL.DeleteCommand)
     End Function
 
 #End Region
 
 #Region " PUBLIC "
 
+    ' Get the source filtered by the language
     Public Shadows Function GetSource(Language As String) As Dictionary(Of String, String)
         ' Get the source
         Dim Clauses As DbClauses = New DbClauses("TO_DELETE", DbClauses.ComparerType.Equal, Nothing) _
@@ -103,11 +142,13 @@
         Dim Source As DataTable = MyBase.GetSource(Clauses)
 
         ' Merge the requested language with the default one for fill the empty translations
-        Return (From Row In Source.AsEnumerable() Select Row!KEY, Row!VALUE) _
+        ' TODO: Check if work proper
+        Return (From Row In Source.AsEnumerable() Where Not IsDBNull(Row!VALUE) Select Row!KEY, Row!VALUE) _
             .OrderBy("[LANGUAGE] " & IIf(Language < Bridge.Languages.Default, "ASC", "DESC")) _
             .GroupBy(Of String)(Function(Pair) Pair.KEY) _
             .ToDictionary(Of String, String)(Function(Pair) Pair.Key, Function(Pair) Pair.First().VALUE)
     End Function
+
 
     ' Get the single value in language
     Public Function GetValue(Key As String, Language As String) As String
@@ -131,6 +172,7 @@
         Return Nothing
     End Function
 
+
     ' Get the value in all languages
     Public Function GetValues(Key As String) As Dictionary(Of String, String)
         ' Create the clauses
@@ -140,7 +182,7 @@
 
         ' Get the filtered source
         Dim Source As DataTable = MyBase.GetSource(Clauses)
-        Dim Values As Dictionary(Of String, String) = New Dictionary(Of String, String)
+        GetValues = New Dictionary(Of String, String)
 
         ' Check if have a result
         For Each Row As DataRow In Source.Rows
@@ -154,12 +196,10 @@
             End If
 
             ' Add the value
-            Values.Add(CurrentKey, CurrentValue)
+            GetValues.Add(CurrentKey, CurrentValue)
         Next
-
-        ' Return 
-        Return Values
     End Function
+
 
     ' Insert command
     Public Shadows Sub Insert(Key As String, Value As String, Language As String)
@@ -173,20 +213,24 @@
         MyBase.Insert(Values)
     End Sub
 
+
     ' Delete command
     Public Shadows Sub Delete(Key As String, Language As String)
         ' Set TO_DELETE to now
-        Dim Values As Dictionary(Of String, Object) = New Dictionary(Of String, Object)
-        Values.Add("TO_DELETE", Now)
-
         ' Create the clauses
         Dim Clauses As DbClauses = DbClauses.Empty
         Clauses.And("KEY", DbClauses.ComparerType.Equal, Key)
         Clauses.And("LANGUAGE", DbClauses.ComparerType.Equal, Language)
 
         ' Update the table
-        MyBase.Update(Values, Clauses)
+        MyBase.Update(Me.ToValues("TO_DELETE", Now), Clauses)
     End Sub
+
+    Public Shadows Sub Delete(Key As String)
+        ' Update the table
+        MyBase.Update(Me.ToValues("TO_DELETE", Now), New DbClauses("KEY", DbClauses.ComparerType.Equal, Key))
+    End Sub
+
 
     ' Update command
     Public Shadows Function Update(Key As String, Value As String, Language As String) As Boolean
@@ -206,12 +250,8 @@
         Clauses.And("KEY", DbClauses.ComparerType.Equal, Key)
         Clauses.And("LANGUAGE", DbClauses.ComparerType.Equal, Language)
 
-        ' Create the values to update
-        Dim Values As Dictionary(Of String, Object) = New Dictionary(Of String, Object)
-        Values.Add("VALUE", Value)
-
         ' Call the base method
-        Return MyBase.Update(Values, Clauses) > 0
+        Return MyBase.Update(Me.ToValues("VALUE", Value), Clauses) > 0
     End Function
 
 #End Region

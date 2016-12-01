@@ -4,9 +4,12 @@
 ' LogFile
 ' by Samuele Carassai
 '
-' Helper class to manage a log file
+' Helper class to manage a log file.
+' Essentially write and read from a log file but the writing session will be made async.
+' Write every time span gap for not load over the system but this can be create some lost of
+' information in case the server stop or crash before the completed cycle.
+'
 ' Version 5.0.0
-' Created 10/08/2015
 ' Updated 02/11/2015
 '
 '*************************************************************************************************
@@ -29,6 +32,8 @@ Public Class LogFile
     Private WriterDelay As TimeSpan = New TimeSpan(0, 0, 1)
 
 
+#Region " CONSTRUCTOR "
+
     ' Constructor
     Sub New(ByVal FilePath As String)
         ' Init 
@@ -46,6 +51,7 @@ Public Class LogFile
         Me.WriterThread.Start()
     End Sub
 
+#End Region
 
 #Region " PRIVATE "
 
@@ -60,7 +66,8 @@ Public Class LogFile
         End If
     End Sub
 
-    ' Read the log content
+
+    ' Try to read all the log content.
     Private Sub Read()
         Try
             ' Reset and read the content
@@ -72,13 +79,17 @@ Public Class LogFile
         End Try
     End Sub
 
-    ' Create the thread procedure
+
+    ' The thread procedure for the asynch writing of the log history.
+    ' Writing will be only if have some change to write. The file will be locked to avoid 
+    ' contemporary writing.
     Private Sub ThreadProc()
         ' Check the status
         While Me.WriterThread.ThreadState <> Threading.ThreadState.Stopped
             Try
                 ' Write the pending changes
                 If Me.mHasChanges Then
+                    ' Lock the file
                     SyncLock Me.mFileLocker
                         ' Write on file and reset the trigger
                         IO.File.WriteAllLines(Me.mFilePath, Me.mContent)
@@ -104,7 +115,8 @@ Public Class LogFile
 
 #Region " PUBLIC "
 
-    ' Append a new formatted message to the file
+    ' Append a new formatted message to the file.
+    ' The formatting will be by the prefix defined from the user or by default the time of writing.
     Public Sub Write(Prefix As String, Message As String)
         ' Adjust the prefix
         If Prefix IsNot Nothing Then
@@ -126,7 +138,8 @@ Public Class LogFile
         Me.Write(Nothing, Message)
     End Sub
 
-    ' Clear the log file content
+
+    ' Clear all the log history from the file.
     Public Sub Clear()
         Me.mContent.Clear()
         Me.mHasChanges = True
@@ -136,7 +149,7 @@ Public Class LogFile
 
 #Region " PROPERTIES "
 
-    ' The text content
+    ' Get the log text.
     Public ReadOnly Property Text() As String
         Get
             ' Check for empty values
@@ -150,7 +163,9 @@ Public Class LogFile
         End Get
     End Property
 
-    ' The max lines number limit
+
+    ' The max lines number limit.
+    ' After this limit the older line will be deleted.
     Public Property MaxLines() As Integer
         Get
             Return Me.mMaxLines
@@ -163,7 +178,8 @@ Public Class LogFile
         End Set
     End Property
 
-    ' Get the file path
+
+    ' Get the file path.
     Public ReadOnly Property FilePath As String
         Get
             Return Me.mFilePath

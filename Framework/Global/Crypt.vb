@@ -4,9 +4,11 @@
 ' Crypt
 ' by Samuele Carassai
 '
-' Helper class to manage cryptography
+' Helper class to manage cryptography.
+' This class propvide a very basis method to encrypt string and image to and from Base64.
+' Also provide some encription/decription methos relative at MD5 algorithm.
+
 ' Version 5.0.0
-' Created --/--/----
 ' Updated 19/10/2016
 '
 '*************************************************************************************************
@@ -30,6 +32,7 @@ Public Class Crypt
 
             Return sBuilder.ToString()
         End Function
+
 
         ' Decrypt a MD5 string
         Public Shared Function Decrypt(ByVal ToOriginal As String, ByVal Key As String) As String
@@ -58,6 +61,7 @@ Public Class Crypt
             End Try
         End Function
 
+
         ' Encrypt a MD5
         Public Shared Function Encrypt(ByVal Original As String, ByVal Key As String) As String
             Dim MD5Hash As Cryptography.MD5CryptoServiceProvider = New Cryptography.MD5CryptoServiceProvider()
@@ -81,6 +85,7 @@ Public Class Crypt
 
     End Class
 
+
     ' Convert a string in Base64
     Public Shared Function ToBase64(ByVal Text As String) As String
         Try
@@ -95,6 +100,7 @@ Public Class Crypt
         End Try
     End Function
 
+
     ' Convert an image to Base64
     Public Shared Function ToBase64(ByVal Image As Drawing.Bitmap, Format As Drawing.Imaging.ImageFormat) As String
         Dim Memory As New IO.MemoryStream()
@@ -108,6 +114,7 @@ Public Class Crypt
         Return Base64
     End Function
 
+
     ' Covert a Base64 code in a string
     Public Shared Shadows Function ToString(Base64 As String) As String
         Try
@@ -118,6 +125,7 @@ Public Class Crypt
             Return String.Empty
         End Try
     End Function
+
 
     ' Convert a Base64 code to a bitmap
     Public Shared Function ToBitmap(Base64 As String) As Drawing.Bitmap
@@ -130,6 +138,7 @@ Public Class Crypt
             Return Nothing
         End Try
     End Function
+
 
     ' Create a random unique key of the passed length
     Public Shared Function CreateUniqueKey(KeyLength As Integer) As String

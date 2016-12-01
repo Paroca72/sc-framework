@@ -5,8 +5,8 @@
 ' by Samuele Carassai
 '
 ' Extend the helper class to link to database (new from version 5.x)
+
 ' Version 5.0.0
-' Created 17/09/2015
 ' Updated 16/10/2016
 '
 '*************************************************************************************************
@@ -52,6 +52,7 @@ Public MustInherit Class DbHelperExtended
         Return List.Contains(ToFind)
     End Function
 
+
     ' Join the list
     Private Function Join(Values As List(Of String)) As String
         ' Reset the holder
@@ -68,6 +69,7 @@ Public MustInherit Class DbHelperExtended
         ' Return
         Return Builder
     End Function
+
 
     ' OleDb analisys 
     Private Sub OleDbAnalisys(Connection As DbConnection)
@@ -106,6 +108,7 @@ Public MustInherit Class DbHelperExtended
             End If
         Next
     End Sub
+
 
     ' Sql analisys
     Private Sub SqlAnalisys(Connection As DbConnection)
@@ -153,6 +156,7 @@ Public MustInherit Class DbHelperExtended
         Next
     End Sub
 
+
     ' Analize the table and store all usefull data
     Private Sub OnAnalizeTable()
         ' Private holders
@@ -187,21 +191,54 @@ Public MustInherit Class DbHelperExtended
 
 #Region " OVERRIDES "
 
+    ' Get the list of all values inside the columns
+    Private Function GetValues(Columns As List(Of String), Clauses As DbClauses) As List(Of String)
+        ' Values
+        Dim Values As List(Of String) = New List(Of String)
+
+        ' Cycle all columns
+        For Each Column As String In Columns
+            ' Create the SQL
+            Dim SQL As DbSqlBuilder = New DbSqlBuilder() _
+                .Table(Me.GetTableName) _
+                .Select(Column) _
+                .Where(Clauses)
+
+            ' Get the values of the current column
+            Dim Table As DataTable = Me.Query.Table(SQL.SelectCommand)
+            Values.AddRange(Table.AsEnumerable().Select(Of String)(Function(Row) Str(Row(Column))).ToArray())
+        Next
+
+        ' Return the values list
+        Return Values
+    End Function
+
+
+    ' Delete all values using a multilanguages class manager
+    Private Sub DeleteMultilanguagesColumns(Query As DbQuery, Values As List(Of String), Manager As Multilanguages)
+        ' link the query to the manager and delete
+        Manager.Query = Query
+        Values.ForEach(Sub(Value) Manager.Delete(Value))
+
+        ' Save the changes on DB
+        Manager.AcceptChanges()
+    End Sub
+
+
     ' Delete
-    Public Overrides Function Delete(Clauses As SCFramework.DbClauses) As Long
-        ' Get the current query object
+    Public Overrides Function Delete(Clauses As DbClauses) As Long
+        ' Get the current query object and determine if must manage the transaction
         Dim Query As SCFramework.DbQuery = Me.Query
-        ' Determine if must manage the transaction
         Dim TransactionOwner As Boolean = Not Query.InTransaction
 
         Try
             ' Check if not within a transaction
             If TransactionOwner Then Query.StartTransaction()
 
-            ' Check if have references to delete
-            If Me.FileColumns.Count > 0 Or Me.ImageColumns.Count > 0 Or Me.TranslateColumns.Count > 0 Then
-                ' TODO: delete translation and images references
-            End If
+            ' Delete the related multilanguages columns
+            If Me.TranslateColumns.Count > 0 Then Me.DeleteMultilanguagesColumns(Query, Me.GetValues(Me.TranslateColumns, Clauses), Bridge.Translations())
+            If Me.FileColumns.Count > 0 Then Me.DeleteMultilanguagesColumns(Query, Me.GetValues(Me.FileColumns, Clauses), Bridge.Files())
+            If Me.ImageColumns.Count > 0 Then Me.DeleteMultilanguagesColumns(Query, Me.GetValues(Me.ImageColumns, Clauses), Bridge.Files())
 
             ' Call the base method to delete records on the current table
             Delete = MyBase.Delete(Clauses)
@@ -231,6 +268,7 @@ Public MustInherit Class DbHelperExtended
         End Set
     End Property
 
+
     ' The file key columns list
     Public Property FileColumns As List(Of String)
         Get
@@ -241,6 +279,7 @@ Public MustInherit Class DbHelperExtended
         End Set
     End Property
 
+
     ' The image key columns list
     Public Property ImageColumns As List(Of String)
         Get
@@ -250,6 +289,7 @@ Public MustInherit Class DbHelperExtended
             Me.mImageColumns = value
         End Set
     End Property
+
 
     ' The translate key columns list
     Public Property TranslateColumns As List(Of String)

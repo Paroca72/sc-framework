@@ -4,9 +4,11 @@
 ' Translations
 ' di Samuele Carassai
 '
-' Classe di gestione lingue
+' Class to manage the translations.
+' Inherits from the Multilanguages class and following that concept in particular this is 
+' specialized to manage translation in multilanguages, different text value by the language code.
+'
 ' Version 5.0.0
-' Created --/--/----
 ' Updated 29/10/2015
 '
 '*************************************************************************************************

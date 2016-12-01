@@ -5,8 +5,8 @@
 ' by Samuele Carassai
 '
 ' Helper class to link to database (new from version 5.x)
+' 
 ' Version 5.0.0
-' Created 10/08/2015
 ' Updated 16/10/2016
 '
 '*************************************************************************************************
@@ -73,6 +73,7 @@ Public MustInherit Class DbHelper
         Next
     End Sub
 
+
     ' Sql analisys
     Private Sub SqlAnalisys(Connection As DbConnection)
         ' Define the request for a specific table
@@ -104,12 +105,14 @@ Public MustInherit Class DbHelper
         Next
     End Sub
 
+
     ' Extract only the writable columns
     Private Function FilterForWritableColumns(Source As Dictionary(Of String, Object)) As Dictionary(Of String, Object)
         ' Filters
         Return (From Pair In Source Where Me.mWritableColumns.Contains(Pair.Key) Select Pair) _
             .ToDictionary(Of String, Object)(Function(Pair) Pair.Key, Function(Pair) Pair.Value)
     End Function
+
 
     ' Analize the table and store all usefull data
     Private Sub OnAnalizeTable()
@@ -151,7 +154,7 @@ Public MustInherit Class DbHelper
 
 #Region " PROTECTED "
 
-    ' Convert a single value in a pair value using the primary key as pair key
+    ' Convert a single value in a clauses using the primary key as reference
     Protected Function ToClauses(Value As Long) As SCFramework.DbClauses
         ' Check if have at least one primary key
         If Me.mPrimaryKeysColumns.Count > 0 Then
@@ -161,6 +164,18 @@ Public MustInherit Class DbHelper
         Else
             ' Else return
             Return Nothing
+        End If
+    End Function
+
+    ' Convert a pair values in a dictionary
+    Protected Function ToValues(Key As String, Value As Object) As Dictionary(Of String, Object)
+        ' Create the holder
+        ToValues = New Dictionary(Of String, Object)
+
+        ' Check for empty values
+        If Not Utils.String.IsEmptyOrWhite(Key) Then
+            ' Add
+            ToValues(Key, Value)
         End If
     End Function
 
@@ -185,6 +200,7 @@ Public MustInherit Class DbHelper
         End Get
     End Property
 
+
     ' The primary key columns list
     Public Property PrimaryKeys As List(Of String)
         Get
@@ -194,6 +210,7 @@ Public MustInherit Class DbHelper
             Me.mPrimaryKeysColumns = value
         End Set
     End Property
+
 
     ' The autonumber columns list
     Public Property AutoNumbers As List(Of String)
@@ -205,12 +222,14 @@ Public MustInherit Class DbHelper
         End Set
     End Property
 
+
     ' The writable column list
     Public ReadOnly Property WritableColumns As List(Of String)
         Get
             Return Me.mWritableColumns
         End Get
     End Property
+
 
     ' Set the dafety checker
     Public Property Safety As Boolean
@@ -229,6 +248,7 @@ Public MustInherit Class DbHelper
     ' Get the linked database table name
     Public MustOverride Function GetTableName() As String
 
+
     ' Delete command
     Public Overridable Function Delete(Clauses As SCFramework.DbClauses) As Long
         ' Check for safety
@@ -240,10 +260,12 @@ Public MustInherit Class DbHelper
         Return Me.Query.Delete(Me.GetTableName(), Clauses)
     End Function
 
+
     ' Insert command
     Public Overridable Function Insert(Values As Dictionary(Of String, Object)) As Long
         Return Me.Query.Insert(Me.GetTableName(), Me.FilterForWritableColumns(Values))
     End Function
+
 
     ' Update command
     Public Overridable Function Update(Values As Dictionary(Of String, Object), Clauses As SCFramework.DbClauses) As Long

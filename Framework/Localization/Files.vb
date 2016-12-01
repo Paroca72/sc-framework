@@ -4,9 +4,13 @@
 ' Files management
 ' by Samuele Carassai
 '
-' Files management
+' Files management.
+' Inherits from the Multilanguages class and following that concept in particular this is 
+' specialized to manage files in multilanguages, different version by the language code.
+' This classes provide the functionality to delete phisically the files references saved 
+' inside the table after delete from the table. 
+'
 ' Version 5.0.0
-' Created 02/11/2015
 ' Updated 13/10/2016
 '
 '*************************************************************************************************
@@ -41,15 +45,16 @@ Public Class Files
         End If
     End Sub
 
-    Private Sub DeletePhisically(Source As List(Of DataRow))
+    Private Sub DeletePhisically(Source() As String)
         ' Check for empty values
         If Source IsNot Nothing Then
             ' Cycle all rows
-            For Each Row As DataRow In Source
-                Me.DeletePhisically(Row!VALUE)
+            For Each Value As String In Source
+                Me.DeletePhisically(Value)
             Next
         End If
     End Sub
+
 
     ' Check the path field
     Private Sub CheckPath(Path As String)
@@ -69,9 +74,10 @@ Public Class Files
 
 #Region " PROTECTED "
 
-    Protected Overrides Function ElaborateToDelete(Source As DataTable) As List(Of DataRow)
+    ' Override the base method to delete phisically the file realted.
+    Protected Overrides Function ApplyToDelete() As String()
         ' Call the base methods and get back the list of the file to delete
-        Dim ToDelete As List(Of DataRow) = MyBase.ElaborateToDelete(Source)
+        Dim ToDelete() As String = MyBase.ApplyToDelete()
         Me.DeletePhisically(ToDelete)
 
         ' Return
@@ -88,7 +94,8 @@ Public Class Files
         Return Me.GetValue(Key, Language)
     End Function
 
-    ' Insert command
+
+    ' Insert command.
     Public Shadows Sub Insert(Key As String, FilePath As String, Language As String)
         ' Check the fields and call the base
         Me.CheckPath(FilePath)

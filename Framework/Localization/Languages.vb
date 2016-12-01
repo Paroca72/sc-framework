@@ -13,7 +13,6 @@
 ' The static access to this class can be found in the <SCFramework.Bridge> global class.
 '
 ' Version 5.0.0
-' Created --/--/----
 ' Updated 20/10/2016
 '
 '*************************************************************************************************
@@ -133,16 +132,19 @@ Public Class Languages
     End Function
 
     ' Get all languages code
-    Public ReadOnly Property AllCodes() As String()
+    Public ReadOnly Property AllCodes(OnlyVisible As Boolean) As String()
         Get
             ' If the all language codes are not defined
             If Me.mAllLanguagesCodes Is Nothing Then
                 ' Lock the data source
                 SyncLock Me.DataSourceLocker
                     ' Get the list of all language codes
-                    Me.mAllLanguagesCodes = (From Row In Me.GetSource().AsEnumerable
-                                             Where Row!VISIBLE = True
-                                             Select CStr(Row!CODE)).ToArray()
+                    Dim Clauses As DbClauses = New DbClauses("VISIBLE", DbClauses.ComparerType.Equal, True)
+                    Dim Rows() As DataRow = Me.GetSource() _
+                        .Select(IIf(OnlyVisible, Clauses, String.Empty))
+
+                    ' To array
+                    Me.mAllLanguagesCodes = (From Row In Rows Select CStr(Row!CODE)).ToArray()
                 End SyncLock
             End If
             ' Return

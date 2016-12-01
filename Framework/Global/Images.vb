@@ -4,9 +4,12 @@
 ' Crypt
 ' by Samuele Carassai
 '
-' Helper class to manage cryptography
+' Helper class to manage images. 
+' This Is a very base classes that provide some methods to treat with images.
+' Create for interface with some control to display retouched images to the video mostly for
+' cover sized area in web application.
+'
 ' Version 5.0.0
-' Created --/--/----
 ' Updated 19/10/2016
 '
 '*************************************************************************************************
@@ -14,16 +17,18 @@
 
 Public Class Images
 
-    ' Enum
+    ' Enum the quality images type
     Public Enum QualityType
         [Default] = 0
         Speed = 1
         High = 2
     End Enum
 
+
 #Region " PRIVATE "
 
-    ' Set the graphics elaboration mode
+    ' Set the graphics elaboration mode.
+    ' Essentially define the velocity/quality used to elaborate the images.
     Private Shared Function SetGraphicsQuality(ByVal G As Drawing.Graphics, ByVal Quality As QualityType) As Drawing.Graphics
         ' Settings by case
         Select Case Quality
@@ -48,13 +53,16 @@ Public Class Images
         Return G
     End Function
 
-    ' Get the graphics from an image and set the quality
+
+    ' Get the graphics from an image and set the quality.
     Private Shared Function GetGraphicsFromImage(Image As Drawing.Image, ByVal Quality As QualityType) As Drawing.Graphics
         Dim G As Drawing.Graphics = Drawing.Graphics.FromImage(Image)
         Return Images.SetGraphicsQuality(G, Quality)
     End Function
 
-    ' Strech a rectangle
+
+    ' Strech a rectangle to fit the destination area.
+    ' MinScale will be used to select if scale on the max or min dimension of the area.
     Private Shared Function StrechRectangle(Source As Drawing.Rectangle, Destination As Drawing.Rectangle, MinScale As Boolean) As Drawing.Rectangle
         ' Find the scale
         Dim XScale As Single = Destination.Width / Source.Width
@@ -73,7 +81,7 @@ Public Class Images
 
 #Region " PUBLIC "
 
-    ' Convert an image to an array 
+    ' Convert an image to an array of bytes.
     Public Shared Function ToArray(ByVal Source As Drawing.Image, Format As Drawing.Imaging.ImageFormat) As Byte()
         ' Create the memory stream
         Dim Stream As IO.MemoryStream = New IO.MemoryStream()
@@ -98,7 +106,8 @@ Public Class Images
         Return Images.ToArray(Source, SCFramework.Mime.GetMimeType(Source))
     End Function
 
-    ' Rotate an image in degrees
+
+    ' Rotate an image in degrees.
     Public Shared Function Rotate(ByVal Source As Drawing.Image, ByVal Angle As Single,
                                   Optional ByVal Quality As QualityType = QualityType.Default) As Drawing.Bitmap
         ' Check for empty values
@@ -127,7 +136,8 @@ Public Class Images
         Return NewImage
     End Function
 
-    ' Crop the source image at the passed dimension
+
+    ' Crop the source image at the passed dimension.
     Public Shared Function Crop(Source As Drawing.Image, ByVal Width As Integer, ByVal Height As Integer,
                                 Optional ByVal Quality As Images.QualityType = Images.QualityType.Default) As Drawing.Image
         ' Check for empty values
@@ -150,7 +160,8 @@ Public Class Images
         Return Dest
     End Function
 
-    ' Strech the source image at the passed dimension
+
+    ' Strech the source image at the passed dimension.
     Public Shared Function Stretch(Source As Drawing.Image, ByVal Width As Integer, ByVal Height As Integer,
                                    Optional ByVal Quality As Images.QualityType = Images.QualityType.Default) As Drawing.Image
         ' Check for empty values
@@ -173,7 +184,8 @@ Public Class Images
         Return Dest
     End Function
 
-    ' Fit the source image at the passed dimension
+
+    ' Fit the source image at the passed dimension.
     Public Shared Function Fit(Source As Drawing.Image, ByVal Width As Integer, ByVal Height As Integer,
                                Optional ByVal Quality As Images.QualityType = Images.QualityType.Default) As Drawing.Image
         ' Check for empty values

@@ -26,6 +26,8 @@ Public Class DbQuery
     Private mCommandTimeout As Integer = 30
 
 
+#Region " CONSTRUCTOR "
+
     ' Constructor
     Sub New()
         Me.mConnection = Me.CreateDatabaseConnection()
@@ -35,7 +37,29 @@ Public Class DbQuery
         Me.mConnection = Me.CreateDatabaseConnection(ConnectionStringName)
     End Sub
 
+#End Region
+
 #Region " CONNECTION "
+
+    ' Get the connection string by name
+    Private Function GetConnectionStringByName(Name As String) As ConnectionStringSettings
+        ' Get the collection of connection strings. 
+        Dim Settings As ConnectionStringSettingsCollection = ConfigurationManager.ConnectionStrings
+
+        ' Check for settings
+        If Not Settings Is Nothing Then
+            ' Walk through the collection and return the first connection string matching the name
+            For Each CS As ConnectionStringSettings In Settings
+                If CS.Name = Name Then
+                    Return CS
+                End If
+            Next
+        End If
+
+        ' Else
+        Return Nothing
+    End Function
+
 
     ' Create the connection to database by the passes connection string name
     Private Function CreateDatabaseConnection(ConnectionSettings As ConnectionStringSettings) As DbConnection
@@ -63,26 +87,6 @@ Public Class DbQuery
         End Try
     End Function
 
-    ' Get the connection string by name
-    Private Function GetConnectionStringByName(Name As String) As ConnectionStringSettings
-        ' Get the collection of connection strings. 
-        Dim Settings As ConnectionStringSettingsCollection = ConfigurationManager.ConnectionStrings
-
-        ' Check for settings
-        If Not Settings Is Nothing Then
-            ' Walk through the collection and return the first connection string matching the name
-            For Each CS As ConnectionStringSettings In Settings
-                If CS.Name = Name Then
-                    Return CS
-                End If
-            Next
-        End If
-
-        ' Else
-        Return Nothing
-    End Function
-
-    ' Create the connection to database by the passes connection string name
     Private Function CreateDatabaseConnection(Name As String) As DbConnection
         ' Get the connection string
         Dim ConnectionString As ConnectionStringSettings = Me.GetConnectionStringByName(Name)
@@ -96,7 +100,6 @@ Public Class DbQuery
         Return Me.CreateDatabaseConnection(ConnectionString)
     End Function
 
-    ' Create the connection to database by the passes connection string name
     Private Function CreateDatabaseConnection() As DbConnection
         ' Check if have at least a connection string available
         If ConfigurationManager.ConnectionStrings.Count = 0 Then
@@ -126,6 +129,7 @@ Public Class DbQuery
             Throw New Exception("No database connection available!")
         End If
     End Sub
+
 
     ' Check if a table exists inside the database
     Public Function ExistsDbTable(Name As String) As Boolean
@@ -173,6 +177,7 @@ Public Class DbQuery
         Return False
     End Function
 
+
     ' Try Create the database table by an sql dump saved inside the resource
     Public Sub CreateDbTable(Name As String)
         ' Create the resource file name
@@ -210,12 +215,14 @@ Public Class DbQuery
         End Get
     End Property
 
+
     ' Get the connection
     Public ReadOnly Property GetConnection As DbConnection
         Get
             Return Me.mConnection
         End Get
     End Property
+
 
     ' Get or set the command timeout
     Public Property CommandTimeout() As Integer
@@ -243,6 +250,7 @@ Public Class DbQuery
         End If
     End Sub
 
+
     ' Finish a executing transaction
     Public Sub FinishTransaction(ByVal Commit As Boolean)
         ' Check for the transaction and the connection
@@ -264,15 +272,18 @@ Public Class DbQuery
         End If
     End Sub
 
+
     ' If the have an active transaction
     Public Function InTransaction() As Boolean
         Return Me.mTransaction IsNot Nothing
     End Function
 
+
     ' Shortcut to commint
     Public Sub CommitTransaction()
         Me.FinishTransaction(True)
     End Sub
+
 
     ' Shortcut to rollback
     Public Sub RollBackTransaction()
@@ -323,6 +334,7 @@ Public Class DbQuery
         End Try
     End Function
 
+
     ' Execute a sql command and return the identity if needed
     Public Function Exec(ByVal Sql As String, Optional ByVal ReturnIdentity As Boolean = False) As Long
         ' Check for database connection
@@ -351,7 +363,6 @@ Public Class DbQuery
         End If
     End Function
 
-    ' Execute a list of commands
     Public Sub Exec(ByVal ParamArray SqlCommands() As String)
         ' Choice the action by the provider
         Select Case Me.GetProvider()
@@ -373,15 +384,18 @@ Public Class DbQuery
         End Select
     End Sub
 
+
     ' Execute a sql command and get the result value
     Public Function Value(ByVal Sql As String) As Object
         Return Me.ExecuteQuery(Sql, True)
     End Function
 
+
     ' Check if a query exists
     Public Function Exists(Sql As String) As Boolean
         Return Me.Row(Sql) IsNot Nothing
     End Function
+
 
     ' Generic insert command
     Public Function Insert(TableName As String, Values As Dictionary(Of String, Object)) As Long
@@ -392,6 +406,7 @@ Public Class DbQuery
             .InsertCommand
         Return Me.Exec(Command, True)
     End Function
+
 
     ' Get the last identity
     Public Function Indentity() As Long
@@ -405,6 +420,7 @@ Public Class DbQuery
         End Select
     End Function
 
+
     ' Generic update command
     Public Function Update(TableName As String, Values As Dictionary(Of String, Object), Clause As SCFramework.DbClauses) As Long
         ' Execute the query command
@@ -415,6 +431,7 @@ Public Class DbQuery
             .UpdateCommand
         Return Me.Exec(Command, True)
     End Function
+
 
     ' Generic delete command
     Public Function Delete(TableName As String, Clause As SCFramework.DbClauses) As Long
@@ -462,6 +479,7 @@ Public Class DbQuery
         Return DataTable
     End Function
 
+
     ' Create a sql command and put the result inside a datatable
     Public Function Table(TableName As String) As DataTable
         ' Execute the query command
@@ -470,6 +488,7 @@ Public Class DbQuery
             .SelectCommand
         Return Me.Table(Command, TableName)
     End Function
+
 
     ' Execute a sql command and get the first row details
     Public Function Row(ByVal Sql As String) As DataRow
@@ -482,6 +501,7 @@ Public Class DbQuery
             Return Nothing
         End If
     End Function
+
 
     ' Create a generic adapter
     Public Function CreateAdapter(ByVal TableName As String) As DbDataAdapter
@@ -514,6 +534,7 @@ Public Class DbQuery
             Return Nothing
         End Try
     End Function
+
 
     ' Update the database
     Public Sub UpdateDatabase(ByVal Source As DataTable, ByVal TableName As String,

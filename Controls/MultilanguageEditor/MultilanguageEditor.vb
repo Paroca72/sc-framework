@@ -93,12 +93,10 @@ Namespace WebControls
         ' Control drawing
         Private Sub ControlDrawing(ByVal writer As HtmlTextWriter)
             ' Get all the translated values
-            Dim TransManager As Translations = New Translations()
-            Dim Values As Dictionary(Of String, String) = TransManager.GetTranslations(Me.TranslationKey)
+            Dim Values As Dictionary(Of String, String) = Bridge.Translations.GetTranslations(Me.TranslationKey)
 
-            ' Serialize the values
+            ' Serialize (JSON) the values
             Dim Serialized As String = String.Empty
-
             For Each Key As String In Values.Keys
                 If Not String.IsNullOrEmpty(Serialized) Then Serialized &= ", "
                 Serialized &= String.Format("{0}: {1}",
@@ -243,31 +241,28 @@ Namespace WebControls
             Dim Serialized As String = Me.Page.Request.Unvalidated.Form(String.Format("{0}_holder", Me.ID))
             Dim JSON As Script.Serialization.JavaScriptSerializer = New Script.Serialization.JavaScriptSerializer()
 
-            ' Deserialize
+            ' Deserialize and init holders
             Dim Source As Object = JSON.Deserialize(Of Object)(Serialized)
-            Dim Values As Dictionary(Of String, String) = New Dictionary(Of String, String)
+            GetValues = New Dictionary(Of String, String)
 
             ' Cicle all languages
-            For Each LanguageCode As String In SCFramework.Bridge.Languages.AllCodes
+            For Each LanguageCode As String In SCFramework.Bridge.Languages.AllCodes(True)
                 Try
-                    ' Try to get the element value abd add to values
+                    ' Try to get the element value and add to values
                     Dim Code As String = LanguageCode.Replace("-", "_")
                     Dim Value As String = Nothing
 
-                    ' Fix the value
+                    ' Fix the value if the source containe the serching code
                     If Source.containsKey(Code) Then
                         Value = Source(Code)
                     End If
 
                     ' Add the language value to the list
-                    Values.Add(LanguageCode, Value)
+                    GetValues.Add(LanguageCode, Value)
 
                 Catch ex As Exception
                 End Try
             Next
-
-            ' Return 
-            Return Values
         End Function
 
         ' Get the language value
@@ -275,12 +270,11 @@ Namespace WebControls
             ' Get all values
             Dim Values As Dictionary(Of String, String) = Me.GetValues()
 
-            ' Search for the value
+            ' Search for the value if found return the filtered one
+            ' else will return nothing.
             If Values.ContainsKey(Language) Then
-                ' Return the selected one
                 Return Values(Language)
             Else
-                ' Else return nothing
                 Return Nothing
             End If
         End Function
@@ -293,14 +287,11 @@ Namespace WebControls
             End If
 
             ' Get all values and update on the database
-            Dim Values As Dictionary(Of String, String) = Me.GetValues()
-            Dim Translations As Translations = New Translations()
-
-            For Each Key As String In Values.Keys
-                ' Try to update the translation
-                If Not Translations.Update(Me.TranslationKey, Values(Key), Key) Then
-                    ' Insert a new one
-                    Translations.Insert(Me.TranslationKey, Values(Key), Key)
+            For Each Pair As KeyValuePair(Of String, String) In Me.GetValues()
+                ' Try to update the translation.
+                ' If not exists (update false) a new translation will be inserted.
+                If Not Bridge.Translations.Update(Me.TranslationKey, Pair.Value, Pair.Key) Then
+                    Bridge.Translations.Insert(Me.TranslationKey, Pair.Value, Pair.Key)
                 End If
             Next
         End Sub

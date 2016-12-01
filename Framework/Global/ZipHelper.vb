@@ -4,12 +4,14 @@
 ' ZipHelper
 ' by Samuele Carassai
 '
-' Helper class to zip data and file
-' Version 5.0.0
-' Created 19/10/2016
-' Updated 19/10/2016
+' Helper class to zip data and file.
+' This class is an embryonic state and waiting to involved it.
+
+' TODO: 
+' - Archive folders And files
 '
-' TODO: Archive folders and files
+' Version 5.0.0
+' Updated 19/10/2016
 '
 '*************************************************************************************************
 

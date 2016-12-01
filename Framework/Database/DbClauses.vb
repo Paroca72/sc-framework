@@ -4,17 +4,20 @@
 ' DbClauses  
 ' by Samuele Carassai
 '
+' This classes is specialized to create a database clauses.
+' Can be used for create filters for datatable or for example to where condition.
+' Have two way to produce the clauses: for SQL (database) or for filter (datatable).
+' 
 ' Sql builder manager
 ' Version 5.0.0
-' Created 10/10/2016
-' Updated 19/10/2016
+' Updated 27/11/2016
 '
 '*************************************************************************************************
 
 
 Public Class DbClauses
 
-    ' Enums
+    ' Enums of the comparator types
     Public Enum ComparerType As Integer
         Equal
         Minor
@@ -25,9 +28,11 @@ Public Class DbClauses
         [Like]
         LikeStart
         LikeEnd
+        [In]
+        NotIn
     End Enum
 
-    ' Single clause
+    ' Single clause structure for internal use
     Private Class SingleClause
 
         Public Clauses As DbClauses = Nothing
@@ -69,10 +74,12 @@ Public Class DbClauses
         Return New SCFramework.DbClauses()
     End Function
 
+
     ' Create a false clauses
     Public Shared Function AlwaysFalse() As DbClauses
         Return New DbClauses("1 <> 1")
     End Function
+
 
     ' Create a true clauses
     Public Shared Function AlwaysTrue() As DbClauses
@@ -84,7 +91,10 @@ Public Class DbClauses
 
 #Region " PRIVATE "
 
-    ' Add a clause
+    ' Add a new clauses in many ways only for internal use.
+    ' To understand the always present GroupAsAnd, add the new clauses connected with the previous token 
+    ' Using an "AND" Else will used an "OR". 
+    ' The creation of the clauses will be made only When Call the builder method.
     Private Function Add(Column As String, Comparer As ComparerType, Value As Object, GroupAsAnd As Boolean) As DbClauses
         ' Create the single clause
         Dim Clause As SingleClause = New SingleClause()
@@ -100,7 +110,6 @@ Public Class DbClauses
         Return Me
     End Function
 
-    ' Add a sql
     Private Function Add(Sql As String, GroupAsAnd As Boolean) As DbClauses
         ' Create the single clause
         Dim Clause As SingleClause = New SingleClause()
@@ -114,7 +123,6 @@ Public Class DbClauses
         Return Me
     End Function
 
-    ' Add a list of clauses defined as key and value pair
     Private Function Add(Clauses As IDictionary(Of String, Object), Comparer As ComparerType, GroupAsAnd As Boolean) As DbClauses
         ' Cycle all clause of list
         For Each Column As String In Clauses.Keys
@@ -126,7 +134,6 @@ Public Class DbClauses
         Return Me
     End Function
 
-    ' Add a list of clauses
     Private Function Add(Clauses As DbClauses, GroupAsAnd As Boolean) As DbClauses
         ' Create the single clause
         Dim Clause As SingleClause = New SingleClause()
@@ -139,6 +146,7 @@ Public Class DbClauses
         ' Return the class reference
         Return Me
     End Function
+
 
     ' Build the single clause
     Private Function Builder(ForFilter As Boolean) As String
@@ -174,6 +182,8 @@ Public Class DbClauses
                     Case ComparerType.MajorOrEqual : ComparerToString = ">="
                     Case ComparerType.Minor : ComparerToString = "<"
                     Case ComparerType.MinorOrEqual : ComparerToString = "<="
+                    Case ComparerType.In : ComparerToString = "IN"
+                    Case ComparerType.NotIn : ComparerToString = "NOT IN"
                 End Select
 
                 ' Fix the comparer in the case of null values
@@ -193,11 +203,18 @@ Public Class DbClauses
                 Dim SqlBuilder As DbSqlBuilder = New DbSqlBuilder(Provider)
                 SqlBuilder.StringEmptyIsNULL = False
 
-                ' Append the new clause. 
-                Filter &= String.Format("{0} {1} {2}",
+                ' Append the new clause by the case
+                If Clause.Comparer = ComparerType.In Or Clause.Comparer = ComparerType.NotIn Then
+                    Filter &= String.Format("{0} {1} ({2})",
+                                        DbSqlBuilder.Quote(Clause.Column),
+                                        ComparerToString,
+                                        Clause.Value)
+                Else
+                    Filter &= String.Format("{0} {1} {2}",
                                         DbSqlBuilder.Quote(Clause.Column),
                                         ComparerToString,
                                         SqlBuilder.Variant(Clause.Value))
+                End If
             End If
         Next
 
@@ -209,7 +226,7 @@ Public Class DbClauses
 
 #Region " PUBLIC "
 
-    ' Add a cluses in AND 
+    ' Add a clauses in AND 
     Public Function [And](Column As String, Comparer As ComparerType, Value As Object)
         Return Me.Add(Column, Comparer, Value, True)
     End Function
@@ -227,7 +244,7 @@ Public Class DbClauses
     End Function
 
 
-    ' Add a cluses in OR 
+    ' Add a clauses in OR 
     Public Function [Or](Column As String, Comparer As ComparerType, Value As Object)
         Return Me.Add(Column, Comparer, Value, False)
     End Function
@@ -245,7 +262,7 @@ Public Class DbClauses
     End Function
 
 
-    ' Check if equal to another clauses
+    ' Check if this clauses equal to another clauses
     Public Function IsEqual(Clauses As DbClauses) As Boolean
         Return Clauses IsNot Nothing AndAlso Me.ForSql.Equals(Clauses.ForSql)
     End Function
@@ -261,12 +278,14 @@ Public Class DbClauses
         End Get
     End Property
 
+
     ' Build the where clauses for data filter
     Public ReadOnly Property ForFilter As String
         Get
             Return Me.Builder(True)
         End Get
     End Property
+
 
     ' True if is empty
     Public ReadOnly Property IsEmpty As Boolean

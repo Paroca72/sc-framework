@@ -60,10 +60,12 @@ Public MustInherit Class DataSourceHelper
         Return Nothing
     End Function
 
+
     ' Add a subortdinate DataSourceHelper object
     Public Overridable Sub AddSubordinate(Subordinate As DataSourceHelper)
         Me.mSubordinates.Add(Subordinate)
     End Sub
+
 
     ' Remove a subordinate finded by the table name
     Public Overridable Sub RemoveSubordinate(TableName As String)
@@ -105,6 +107,7 @@ Public MustInherit Class DataSourceHelper
         Next
     End Sub
 
+
     ' Translate many columns of the source
     Private Sub DoTranslateColumns(Source As DataTable, Columns As List(Of String), Manager As SCFramework.Multilanguages)
         ' Cicle all the columns to translate
@@ -135,6 +138,7 @@ Public MustInherit Class DataSourceHelper
         Return Pairs
     End Function
 
+
     ' Check if the clauses is same of the last in memory
     Private Function ClausesIsChanged(NewClauses As SCFramework.DbClauses) As Boolean
         ' Check for null values
@@ -148,6 +152,7 @@ Public MustInherit Class DataSourceHelper
             Return True
         End If
     End Function
+
 
     ' Check for the static concurrent access safe mode column in the data source
     Private Sub CheckForStaticModeSafeColumn(Source As DataTable)
@@ -195,6 +200,7 @@ Public MustInherit Class DataSourceHelper
         End If
     End Function
 
+
     ' Get the data source holded in memory
     Private Function SelectDataSource(Clauses As SCFramework.DbClauses) As DataTable
         ' If the cluases not changed return the keep in memory source
@@ -214,6 +220,7 @@ Public MustInherit Class DataSourceHelper
         ' Nohting
         Return Nothing
     End Function
+
 
     ' Create a new data source
     Private Function CreateNewDataSource(Clauses As SCFramework.DbClauses)
@@ -245,6 +252,7 @@ Public MustInherit Class DataSourceHelper
         Return Source
     End Function
 
+
     ' Add the session column id information
     Private Sub AddSessionID(Values As IDictionary(Of String, Object))
         ' Check for empty values
@@ -266,10 +274,43 @@ Public MustInherit Class DataSourceHelper
 
 #End Region
 
+#Region " MULTILANGUAGES "
+
+    ' Get the list of all values inside the columns
+    Private Function GetValues(Columns As List(Of String)) As List(Of String)
+        ' Values
+        GetValues = New List(Of String)
+
+        ' Cycle all row and search for delete one
+        For Each Row As DataRow In Me.mDataSource.GetChanges(DataRowState.Deleted).Rows
+            ' Cycle all columns
+            For Each Column As String In Columns
+                ' Get the values of the current column if exists in table
+                If Row.Table.Columns.Contains(Column) Then
+                    GetValues.Add(Row(Column, DataRowVersion.Original))
+                End If
+            Next
+        Next
+    End Function
+
+
+    ' Delete all values using a multilanguages class manager
+    Private Sub DeleteMultilanguagesColumns(Query As DbQuery, Columns As List(Of String), Manager As Multilanguages)
+        ' Apply the parent query to the manager and set the manager as memory managed
+        Manager.Query = Query
+
+        ' Cycle all values and delete from key
+        Me.GetValues(Columns).ForEach(Sub(Value) Manager.Delete(Value))
+        Manager.AcceptChanges()
+    End Sub
+
+#End Region
+
 #Region " DATABASE "
 
     ' Holde the identity column name
     Private IdentityColumnName As String = Nothing
+
 
     ' Get the first identity column name
     Private Function ExtractIdentityField(Source As DataTable) As String
@@ -282,6 +323,7 @@ Public MustInherit Class DataSourceHelper
         ' Else return nothing
         Return Nothing
     End Function
+
 
     ' Update the identity field
     Private Sub HandleOldDbRowUpdated(ByVal sender As Object, ByVal e As OleDb.OleDbRowUpdatedEventArgs)
@@ -299,6 +341,7 @@ Public MustInherit Class DataSourceHelper
             e.Row.AcceptChanges()
         End If
     End Sub
+
 
     ' Update the database
     Private Sub UpdateDatabase(ByVal Source As DataTable)
@@ -333,6 +376,7 @@ Public MustInherit Class DataSourceHelper
         End Get
     End Property
 
+
     ' True if has changes
     Public ReadOnly Property HasChanges() As Boolean
         Get
@@ -345,12 +389,14 @@ Public MustInherit Class DataSourceHelper
         End Get
     End Property
 
+
     ' Return the if memory managed
     Public ReadOnly Property IsMemoryManaged() As Boolean
         Get
             Return Me.mDataSource IsNot Nothing
         End Get
     End Property
+
 
     ' Set/get the static concurrent access safe mode to the data source
     Public Property StaticConcurrentAccessSafeMode As Boolean
@@ -388,6 +434,7 @@ Public MustInherit Class DataSourceHelper
             Me.mLastClauses = Clauses
         End If
     End Function
+
 
     ' Delete command
     Public Overrides Function Delete(Clauses As DbClauses) As Long
@@ -444,6 +491,7 @@ Public MustInherit Class DataSourceHelper
         End Try
     End Function
 
+
     ' Insert command
     Public Overrides Function Insert(Values As Dictionary(Of String, Object)) As Long
         Try
@@ -496,6 +544,7 @@ Public MustInherit Class DataSourceHelper
             Throw ex
         End Try
     End Function
+
 
     ' Update command
     Public Overrides Function Update(Values As Dictionary(Of String, Object), Clauses As SCFramework.DbClauses) As Long
@@ -550,6 +599,7 @@ Public MustInherit Class DataSourceHelper
         End Try
     End Function
 
+
     ' Fix the changes on the database using the data source held in memory
     Public Overridable Sub AcceptChanges()
         ' Only if work in memory
@@ -562,6 +612,11 @@ Public MustInherit Class DataSourceHelper
         Try
             ' Check if not within a transaction
             If TransactionOwner Then Query.StartTransaction()
+
+            ' Delete the related multilanguages fields
+            If Me.TranslateColumns.Count > 0 Then Me.DeleteMultilanguagesColumns(Query, Me.TranslateColumns, Bridge.Translations())
+            If Me.ImageColumns.Count > 0 Then Me.DeleteMultilanguagesColumns(Query, Me.ImageColumns, Bridge.Files())
+            If Me.FileColumns.Count > 0 Then Me.DeleteMultilanguagesColumns(Query, Me.FileColumns, Bridge.Files())
 
             ' Cycle subortdinates for update
             For Each Subordinate As DataSourceHelper In Me.mSubordinates
@@ -583,6 +638,7 @@ Public MustInherit Class DataSourceHelper
         End Try
     End Sub
 
+
     ' Reject the soure changes and also on all the subordinates
     Public Overridable Sub RejectChanges()
         ' Only if work in memory
@@ -596,6 +652,7 @@ Public MustInherit Class DataSourceHelper
         ' Reject the source changes
         Me.mDataSource.RejectChanges()
     End Sub
+
 
     ' Force to reload data source using the last clauses at the next source access
     Public Overridable Sub CleanDataSouce()

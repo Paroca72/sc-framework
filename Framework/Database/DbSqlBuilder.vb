@@ -5,12 +5,11 @@
 ' by Samuele Carassai
 '
 ' Sql builder manager
+'
 ' Version 5.0.0
-' Created 17/09/2015
 ' Updated 15/10/2016
 '
 ' Support databases: OleDb, Sql
-'
 ' TODO: Implement the join function
 '
 '*************************************************************************************************
@@ -36,6 +35,8 @@ Public Class DbSqlBuilder
     Private mUpdateValues As String = Nothing
     Private mWhereClauses As String = Nothing
     Private mOrderFields As String = Nothing
+
+    Private mDistinct As Boolean = False
 
 
 #Region " CONSTRUCTOR "
@@ -63,6 +64,7 @@ Public Class DbSqlBuilder
         End Set
     End Property
 
+
     ' Consider the empty string as a NULL db value
     Public Property StringEmptyIsNULL As Boolean
         Get
@@ -73,6 +75,7 @@ Public Class DbSqlBuilder
         End Set
     End Property
 
+
     ' Consider the date min value as a NULL db value
     Public Property DateMinIsNULL As Boolean
         Get
@@ -82,6 +85,7 @@ Public Class DbSqlBuilder
             Me.mDateMinIsNULL = value
         End Set
     End Property
+
 
     ' Set the database culture
     Public Property DataBaseCulture As Globalization.CultureInfo
@@ -289,6 +293,7 @@ Public Class DbSqlBuilder
         Return Nothing
     End Function
 
+
     ' Return a DB value rappresentation
     Public Shared Function GetDbValue(ByVal Value As Object) As Object
         ' Check for null values
@@ -304,6 +309,7 @@ Public Class DbSqlBuilder
 
         Return Value
     End Function
+
 
     ' Quote a field is necessary
     Public Shared Function Quote(Field As String) As String
@@ -348,6 +354,7 @@ Public Class DbSqlBuilder
         Return Field
     End Function
 
+
     ' Create a join 
     Private Function ListJoiner(Fields() As String) As String
         Return String.Join(", ", (From Field As String In Fields Where Field.Trim <> String.Empty Select Me.InternalQuote(Field)).ToArray)
@@ -361,6 +368,14 @@ Public Class DbSqlBuilder
     Public Function Table(Name As String) As DbSqlBuilder
         ' Hold and return
         Me.mTableName = Name
+        Return Me
+    End Function
+
+
+    ' Set the distict
+    Public Function Distinct(Value As Boolean) As DbSqlBuilder
+        ' Hold and return
+        Me.mDistinct = Value
         Return Me
     End Function
 
@@ -473,7 +488,7 @@ Public Class DbSqlBuilder
 
 #End Region
 
-#Region " CREATE "
+#Region " PUBLIC "
 
     ' Create the select command
     Public ReadOnly Property SelectCommand() As String
@@ -484,7 +499,8 @@ Public Class DbSqlBuilder
             End If
 
             ' Create
-            Dim Sql As String = String.Format("SELECT {0} FROM {1}",
+            Dim Sql As String = String.Format("SELECT {0}{1} FROM {2}",
+                                          IIf(Me.mDistinct, "DISTICT ", String.Empty),
                                           IIf(String.IsNullOrEmpty(Me.mSelectFields), "*", Me.mSelectFields),
                                           Me.InternalQuote(Me.mTableName))
 
@@ -496,6 +512,7 @@ Public Class DbSqlBuilder
             Return Sql
         End Get
     End Property
+
 
     ' Create the insert command
     Public ReadOnly Property InsertCommand() As String
@@ -509,6 +526,7 @@ Public Class DbSqlBuilder
             Return String.Format("INSERT INTO {0} {1}", Me.InternalQuote(Me.mTableName), Me.mInsertValues)
         End Get
     End Property
+
 
     ' Create the update command
     Public ReadOnly Property UpdateCommand() As String
@@ -529,6 +547,7 @@ Public Class DbSqlBuilder
             Return Sql
         End Get
     End Property
+
 
     ' Create the delete command
     Public ReadOnly Property DeleteCommand() As String

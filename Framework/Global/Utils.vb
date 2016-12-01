@@ -4,9 +4,9 @@
 ' Utils  
 ' by Samuele Carassai
 '
-' Utilities class
+' Utilities class.
+
 ' Version 5.0.0
-' Created 09/10/2016
 ' Updated 19/10/2016
 '
 '*************************************************************************************************
