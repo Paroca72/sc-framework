@@ -23,7 +23,7 @@ Public Class Files
 #Region " MUST OVERRIDES "
 
     ' Define the linked databse table name
-    Public Overrides Function GetTableName() As String
+    Public Overrides Function Name() As String
         Return "SYS_FILES"
     End Function
 

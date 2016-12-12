@@ -102,11 +102,11 @@ Public MustInherit Class Multilanguages
     Private Sub SyncWithLanguagesTable()
         ' Serialize the languages codes and create the clauses
         Dim Codes As String = String.Join(", ", Bridge.Languages.AllCodes(False))
-        Dim Clauses As DbClauses = New DbClauses("CODE", DbClauses.ComparerType.NotIn, Codes)
+        Dim Clauses As DB.Clauses = New DB.Clauses("CODE", DB.Clauses.Comparer.NotIn, Codes)
 
         ' Create the SQL for update the rows not inside the codes and execute it
-        Dim SQL As DbSqlBuilder = New DbSqlBuilder() _
-            .Table(Me.GetTableName()) _
+        Dim SQL As DB.SqlBuilder = New DB.SqlBuilder(Me.Query.GetProvider()) _
+            .Table(Me.Name()) _
             .Update(Me.ToValues("TO_DELETE", Now)) _
             .Where(Clauses)
         Me.Query.Exec(SQL.UpdateCommand)
@@ -116,9 +116,9 @@ Public MustInherit Class Multilanguages
     ' Clean the rows marked as TO_DELETE if needed
     Protected Overridable Function ApplyToDelete() As String()
         ' Create the SQL builder
-        Dim Clauses As DbClauses = New DbClauses("TO_DELETE", DbClauses.ComparerType.Minor, Now.AddMinutes(Multilanguages.DELETE_AFTER_MINUTES))
-        Dim SQL As DbSqlBuilder = New DbSqlBuilder() _
-            .Table(Me.GetTableName()) _
+        Dim Clauses As DB.Clauses = New DB.Clauses("TO_DELETE", DB.Clauses.Comparer.Minor, Now.AddMinutes(Multilanguages.DELETE_AFTER_MINUTES))
+        Dim SQL As DB.SqlBuilder = New DB.SqlBuilder(Me.Query.GetProvider()) _
+            .Table(Me.Name()) _
             .Select("VALUE") _
             .Where(Clauses)
 
@@ -137,8 +137,8 @@ Public MustInherit Class Multilanguages
     ' Get the source filtered by the language
     Public Shadows Function GetSource(Language As String) As Dictionary(Of String, String)
         ' Get the source
-        Dim Clauses As DbClauses = New DbClauses("TO_DELETE", DbClauses.ComparerType.Equal, Nothing) _
-            .And(New DbClauses("LANGUAGE", DbClauses.ComparerType.Equal, Language).Or("LANGUAGE", DbClauses.ComparerType.Equal, Bridge.Languages.Default))
+        Dim Clauses As DB.Clauses = New DB.Clauses("TO_DELETE", DB.Clauses.Comparer.Equal, Nothing) _
+            .And(New DB.Clauses("LANGUAGE", DB.Clauses.Comparer.Equal, Language).Or("LANGUAGE", DB.Clauses.Comparer.Equal, Bridge.Languages.Default))
         Dim Source As DataTable = MyBase.GetSource(Clauses)
 
         ' Merge the requested language with the default one for fill the empty translations
@@ -153,10 +153,10 @@ Public MustInherit Class Multilanguages
     ' Get the single value in language
     Public Function GetValue(Key As String, Language As String) As String
         ' Create the clauses
-        Dim Clauses As DbClauses = New DbClauses()
-        Clauses.And("KEY", DbClauses.ComparerType.Equal, Key)
-        Clauses.And("LANGUAGE", DbClauses.ComparerType.Equal, Language)
-        Clauses.And("TO_DELETE", DbClauses.ComparerType.Equal, Nothing)
+        Dim Clauses As DB.Clauses = New DB.Clauses()
+        Clauses.And("KEY", DB.Clauses.Comparer.Equal, Key)
+        Clauses.And("LANGUAGE", DB.Clauses.Comparer.Equal, Language)
+        Clauses.And("TO_DELETE", DB.Clauses.Comparer.Equal, Nothing)
 
         ' Get the filtered source
         Dim Source As DataTable = MyBase.GetSource(Clauses)
@@ -176,9 +176,9 @@ Public MustInherit Class Multilanguages
     ' Get the value in all languages
     Public Function GetValues(Key As String) As Dictionary(Of String, String)
         ' Create the clauses
-        Dim Clauses As DbClauses = New DbClauses()
-        Clauses.And("KEY", DbClauses.ComparerType.Equal, Key)
-        Clauses.And("TO_DELETE", DbClauses.ComparerType.Equal, Nothing)
+        Dim Clauses As DB.Clauses = New DB.Clauses()
+        Clauses.And("KEY", DB.Clauses.Comparer.Equal, Key)
+        Clauses.And("TO_DELETE", DB.Clauses.Comparer.Equal, Nothing)
 
         ' Get the filtered source
         Dim Source As DataTable = MyBase.GetSource(Clauses)
@@ -218,9 +218,9 @@ Public MustInherit Class Multilanguages
     Public Shadows Sub Delete(Key As String, Language As String)
         ' Set TO_DELETE to now
         ' Create the clauses
-        Dim Clauses As DbClauses = DbClauses.Empty
-        Clauses.And("KEY", DbClauses.ComparerType.Equal, Key)
-        Clauses.And("LANGUAGE", DbClauses.ComparerType.Equal, Language)
+        Dim Clauses As DB.Clauses = DB.Clauses.Empty
+        Clauses.And("KEY", DB.Clauses.Comparer.Equal, Key)
+        Clauses.And("LANGUAGE", DB.Clauses.Comparer.Equal, Language)
 
         ' Update the table
         MyBase.Update(Me.ToValues("TO_DELETE", Now), Clauses)
@@ -228,7 +228,7 @@ Public MustInherit Class Multilanguages
 
     Public Shadows Sub Delete(Key As String)
         ' Update the table
-        MyBase.Update(Me.ToValues("TO_DELETE", Now), New DbClauses("KEY", DbClauses.ComparerType.Equal, Key))
+        MyBase.Update(Me.ToValues("TO_DELETE", Now), New DB.Clauses("KEY", DB.Clauses.Comparer.Equal, Key))
     End Sub
 
 
@@ -246,9 +246,9 @@ Public MustInherit Class Multilanguages
         End If
 
         ' Create the clauses
-        Dim Clauses As DbClauses = DbClauses.Empty
-        Clauses.And("KEY", DbClauses.ComparerType.Equal, Key)
-        Clauses.And("LANGUAGE", DbClauses.ComparerType.Equal, Language)
+        Dim Clauses As DB.Clauses = DB.Clauses.Empty
+        Clauses.And("KEY", DB.Clauses.Comparer.Equal, Key)
+        Clauses.And("LANGUAGE", DB.Clauses.Comparer.Equal, Language)
 
         ' Call the base method
         Return MyBase.Update(Me.ToValues("VALUE", Value), Clauses) > 0

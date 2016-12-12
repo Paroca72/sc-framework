@@ -38,7 +38,7 @@ Public Class Stats
 #Region " MUST OVERRIDES "
 
     ' Define the linked databse table name
-    Public Overrides Function GetTableName() As String
+    Public Overrides Function Name() As String
         Return "SYS_STATS"
     End Function
 
@@ -79,7 +79,7 @@ Public Class Stats
     ' Get source filtered by date
     Private Function GetFilteredSource([Date] As Date) As DataTable
         ' Create the clauses and filter
-        Return Me.GetSource(New SCFramework.DbClauses("DAY", SCFramework.DbClauses.ComparerType.MinorOrEqual, [Date]))
+        Return Me.GetSource(New SCFramework.DB.Clauses("DAY", SCFramework.DB.Clauses.Comparer.MinorOrEqual, [Date]))
     End Function
 
 #End Region
@@ -87,7 +87,7 @@ Public Class Stats
 #Region " PUBLIC "
 
     ' Get the data source
-    Public Shadows Function GetSource(Optional Clauses As SCFramework.DbClauses = Nothing) As DataTable
+    Public Shadows Function GetSource(Optional Clauses As DB.Clauses = Nothing) As DataTable
         ' Get the data source
         Dim Source As DataTable = MyBase.GetSource(Clauses, False)
 
@@ -105,7 +105,7 @@ Public Class Stats
 
         ' Apply the columns value
         ' TODO: create a static languages manager
-        Dim LanguageManager As SCFramework.Languages = New SCFramework.Languages()
+        Dim LanguageManager As Languages = New Languages()
         Dim Culture As Globalization.CultureInfo = Globalization.CultureInfo.CreateSpecificCulture(LanguageManager.Current)
 
         For Each Row As DataRow In Source.Rows
@@ -150,10 +150,10 @@ Public Class Stats
         If Day = Date.MinValue Then Day = Date.Today
 
         ' Create the clauses for a single day
-        Dim Clauses As DbClauses = DbClauses.Empty _
-            .And("YEAR_NUMBER", SCFramework.DbClauses.ComparerType.Equal, Day.Year) _
-            .and("MONTH_NUMBER", SCFramework.DbClauses.ComparerType.Equal, Day.Month) _
-            .and("DAY_NUMBER", SCFramework.DbClauses.ComparerType.Equal, Day.Day)
+        Dim Clauses As DB.Clauses = DB.Clauses.Empty _
+            .And("YEAR_NUMBER", DB.Clauses.Comparer.Equal, Day.Year) _
+            .and("MONTH_NUMBER", DB.Clauses.Comparer.Equal, Day.Month) _
+            .and("DAY_NUMBER", DB.Clauses.Comparer.Equal, Day.Day)
 
         ' Get the data source and check if exists
         Dim Today As DataRow = Me.GetSource(Clauses).AsEnumerable().FirstOrDefault

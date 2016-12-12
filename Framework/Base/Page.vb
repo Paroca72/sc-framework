@@ -29,7 +29,7 @@ Public Class Page
 
 #Region " PRIVATES "
 
-    Private DBU As SCFramework.DbQuery = Nothing
+    Private DBU As DB.Query = Nothing
 
     Public Sub TraceAction(ByVal Type As String, ByVal Success As Boolean, _
                             Optional ByVal [Alias] As String = Nothing, Optional ByVal Password As String = Nothing)
@@ -89,10 +89,10 @@ Public Class Page
         End Get
     End Property
 
-    Public ReadOnly Property Query() As SCFramework.DbQuery
+    Public ReadOnly Property Query() As DB.Query
         Get
             If IsNothing(Me.DBU) Then
-                Me.DBU = New SCFramework.DbQuery()
+                Me.DBU = New DB.Query()
             End If
             Return Me.DBU
         End Get

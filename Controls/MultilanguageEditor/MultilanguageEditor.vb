@@ -157,7 +157,7 @@ Namespace WebControls
         ' Load the dynamic scripts resource
         Private Sub IncludeDynamicScriptsResources()
             ' Create the buttons by languages codes
-            Dim Clauses As DbClauses = New DbClauses("VISIBLE", DbClauses.ComparerType.Equal, True)
+            Dim Clauses As DB.Clauses = New DB.Clauses("VISIBLE", DB.Clauses.Comparer.Equal, True)
             Dim Source As DataTable = Bridge.Languages.GetSource(Clauses)
             Dim Script As String = String.Empty
 

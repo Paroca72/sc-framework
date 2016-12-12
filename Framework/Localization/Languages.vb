@@ -47,7 +47,7 @@ Public Class Languages
 
 #Region " OVERRIDES "
 
-    Public Overrides Function GetTableName() As String
+    Public Overrides Function Name() As String
         Return "SYS_LANGUAGES"
     End Function
 
@@ -139,7 +139,7 @@ Public Class Languages
                 ' Lock the data source
                 SyncLock Me.DataSourceLocker
                     ' Get the list of all language codes
-                    Dim Clauses As DbClauses = New DbClauses("VISIBLE", DbClauses.ComparerType.Equal, True)
+                    Dim Clauses As DB.Clauses = New DB.Clauses("VISIBLE", DB.Clauses.Comparer.Equal, True)
                     Dim Rows() As DataRow = Me.GetSource() _
                         .Select(IIf(OnlyVisible, Clauses, String.Empty))
 
@@ -240,7 +240,7 @@ Public Class Languages
     End Function
 
     ' Get the source table.
-    Public Shadows Function GetSource(Optional Clauses As DbClauses = Nothing) As DataTable
+    Public Shadows Function GetSource(Optional Clauses As DB.Clauses = Nothing) As DataTable
         Return MyBase.GetSource(Clauses)
     End Function
 

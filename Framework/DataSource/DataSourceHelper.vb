@@ -13,7 +13,7 @@
 
 
 Public MustInherit Class DataSourceHelper
-    Inherits DbHelperExtended
+    Inherits DB.HelperExtended
 
     ' Static
     Private Const CONCURRENTACCESS_COLUMNNAME As String = "SCFRAMEWORK_SESSIONID"
@@ -23,7 +23,7 @@ Public MustInherit Class DataSourceHelper
     Private mDataSourceLocker As Object = New Object()
 
     Private mSubordinates As List(Of DataSourceHelper) = Nothing
-    Private mLastClauses As SCFramework.DbClauses = Nothing
+    Private mLastClauses As DB.Clauses = Nothing
 
     Private mStaticConcurrentAccessSafeMode = False
     Private mSessionID As String = Nothing
@@ -52,7 +52,7 @@ Public MustInherit Class DataSourceHelper
         ' Cycle all subortdinates
         For Each Subordinate As DataSourceHelper In Me.mSubordinates
             ' Compare the table name
-            If String.Compare(Subordinate.GetTableName(), TableName, True) Then
+            If String.Compare(Subordinate.Name(), TableName, True) Then
                 Return Subordinate
             End If
         Next
@@ -127,7 +127,7 @@ Public MustInherit Class DataSourceHelper
         Dim Pairs As Dictionary(Of String, Object) = New Dictionary(Of String, Object)()
 
         ' Cycle all primary keys list
-        For Each Key As String In Me.PrimaryKeys
+        For Each Key As String In Me.GetColumnsName(DB.Column.Types.PrimaryKey)
             ' If exists add the key and the value at the list
             If Row.Table.Columns.Contains(Key) Then
                 Pairs.Add(Key, Row(Key))
@@ -140,7 +140,7 @@ Public MustInherit Class DataSourceHelper
 
 
     ' Check if the clauses is same of the last in memory
-    Private Function ClausesIsChanged(NewClauses As SCFramework.DbClauses) As Boolean
+    Private Function ClausesIsChanged(NewClauses As DB.Clauses) As Boolean
         ' Check for null values
         If NewClauses Is Nothing And Me.mLastClauses Is Nothing Then
             Return False
@@ -179,15 +179,15 @@ Public MustInherit Class DataSourceHelper
     End Sub
 
     ' Adjust the clauses considering is the static safe is active
-    Private Function AdjustClauses(Clauses As SCFramework.DbClauses) As SCFramework.DbClauses
+    Private Function AdjustClauses(Clauses As DB.Clauses) As DB.Clauses
         ' Check for static concurrent access safe is active
         If Me.mStaticConcurrentAccessSafeMode And Me.mSessionID IsNot Nothing Then
             ' Create the session clauses
-            Dim SessionClauses As DbClauses = New DbClauses(DataSourceHelper.CONCURRENTACCESS_COLUMNNAME, DbClauses.ComparerType.Equal, Nothing) _
-                .Or(DataSourceHelper.CONCURRENTACCESS_COLUMNNAME, DbClauses.ComparerType.Equal, Bridge.Session.SessionID)
+            Dim SessionClauses As DB.Clauses = New DB.Clauses(CONCURRENTACCESS_COLUMNNAME, DB.Clauses.Comparer.Equal, Nothing) _
+                .Or(CONCURRENTACCESS_COLUMNNAME, DB.Clauses.Comparer.Equal, Bridge.Session.SessionID)
 
             ' Adjust
-            Dim AdjustedClauses As SCFramework.DbClauses = DbClauses.Empty _
+            Dim AdjustedClauses As DB.Clauses = DB.Clauses.Empty _
                 .And(Clauses) _
                 .And(SessionClauses)
 
@@ -202,7 +202,7 @@ Public MustInherit Class DataSourceHelper
 
 
     ' Get the data source holded in memory
-    Private Function SelectDataSource(Clauses As SCFramework.DbClauses) As DataTable
+    Private Function SelectDataSource(Clauses As DB.Clauses) As DataTable
         ' If the cluases not changed return the keep in memory source
         If Not Me.ClausesIsChanged(Clauses) And Not Me.mStaticConcurrentAccessSafeMode Then
             ' Return the current data source
@@ -223,24 +223,28 @@ Public MustInherit Class DataSourceHelper
 
 
     ' Create a new data source
-    Private Function CreateNewDataSource(Clauses As SCFramework.DbClauses)
+    Private Function CreateNewDataSource(Clauses As DB.Clauses)
         ' Create the sql builder
-        Dim SqlBuilder As DbSqlBuilder = New DbSqlBuilder() _
-            .Table(Me.GetTableName()) _
+        Dim SqlBuilder As DB.SqlBuilder = New DB.SqlBuilder(Me.Query.GetProvider()) _
+            .Table(Me.Name()) _
             .Where(Clauses) _
             .Order(Me.OrderColumns)
 
         ' I must create a new datasource with the proper columns settings
-        Dim Source As DataTable = Bridge.Query.Table(SqlBuilder.SelectCommand, Me.GetTableName())
+        Dim Source As DataTable = Bridge.Query.Table(SqlBuilder.SelectCommand, Me.Name())
         Source.CaseSensitive = False
         Source.Locale = CultureInfo.InvariantCulture
 
         ' Static safe column
         Me.CheckForStaticModeSafeColumn(Source)
 
+        ' TODO: temporary fixed
+        Dim PrimaryKeys() As String = Me.GetColumnsName(DB.Column.Types.PrimaryKey)
+        Dim AutoNumbers() As String = Me.GetColumnsName(DB.Column.Types.Identity)
+
         ' Data source columns settings
-        If Me.PrimaryKeys.Count > 0 Then SCFramework.Utils.DataTable.SetPrimaryKeys(Source, Me.PrimaryKeys.ToArray)
-        If Me.AutoNumbers.Count > 0 Then SCFramework.Utils.DataTable.SetAutoIncrements(Source, Me.AutoNumbers.ToArray)
+        If PrimaryKeys.Count > 0 Then SCFramework.Utils.DataTable.SetPrimaryKeys(Source, PrimaryKeys.ToArray)
+        If AutoNumbers.Count > 0 Then SCFramework.Utils.DataTable.SetAutoIncrements(Source, AutoNumbers.ToArray)
 
         ' Multilanguages columns
         Me.DoTranslateColumns(Source, Me.TranslateColumns, New SCFramework.Translations())
@@ -295,7 +299,7 @@ Public MustInherit Class DataSourceHelper
 
 
     ' Delete all values using a multilanguages class manager
-    Private Sub DeleteMultilanguagesColumns(Query As DbQuery, Columns As List(Of String), Manager As Multilanguages)
+    Private Sub DeleteMultilanguagesColumns(Query As DB.Query, Columns As List(Of String), Manager As Multilanguages)
         ' Apply the parent query to the manager and set the manager as memory managed
         Manager.Query = Query
 
@@ -314,11 +318,15 @@ Public MustInherit Class DataSourceHelper
 
     ' Get the first identity column name
     Private Function ExtractIdentityField(Source As DataTable) As String
+        ' TODO: temporary fixed
+        Dim PrimaryKeys() As String = Me.GetColumnsName(DB.Column.Types.PrimaryKey)
+        Dim AutoNumbers() As String = Me.GetColumnsName(DB.Column.Types.Identity)
+
         ' Cycle all keys
         For Each Column As DataColumn In Source.Columns
             ' Check for autonumber
-            If Me.AutoNumbers.Contains(Column.ColumnName) And
-                Me.PrimaryKeys.Contains(Column.ColumnName) Then Return Column.ColumnName
+            If AutoNumbers.Contains(Column.ColumnName) And
+                PrimaryKeys.Contains(Column.ColumnName) Then Return Column.ColumnName
         Next
         ' Else return nothing
         Return Nothing
@@ -346,7 +354,7 @@ Public MustInherit Class DataSourceHelper
     ' Update the database
     Private Sub UpdateDatabase(ByVal Source As DataTable)
         ' Create the adapter and check for empty value
-        Dim Adapter As Common.DbDataAdapter = Me.Query.CreateAdapter(Me.GetTableName())
+        Dim Adapter As Common.DbDataAdapter = Me.Query.CreateAdapter(Me.Name())
         If Adapter Is Nothing Then Exit Sub
 
         ' Get the identity column name
@@ -416,7 +424,7 @@ Public MustInherit Class DataSourceHelper
     ' Set the data table as a source filtered by where clausole.
     ' If KeepInMemory is true the classes will be managed in mamory and all methods will be applied on the table stored.
     ' Else when you will use a methos as Insert, Delete or Update will have effect directly on the database.
-    Public Overridable Function GetSource(Optional Clauses As SCFramework.DbClauses = Nothing,
+    Public Overridable Function GetSource(Optional Clauses As DB.Clauses = Nothing,
                                           Optional KeepInMemory As Boolean = False) As DataTable
         ' Hold the source
         If Me.IsMemoryManaged Then
@@ -437,7 +445,7 @@ Public MustInherit Class DataSourceHelper
 
 
     ' Delete command
-    Public Overrides Function Delete(Clauses As DbClauses) As Long
+    Public Overrides Function Delete(Clauses As DB.Clauses) As Long
         ' Check for safety
         If (Me.Safety) And (Clauses Is Nothing OrElse Clauses.IsEmpty) Then
             Throw New Exception("This command will delete all row in the table and related subordinate table items!")
@@ -458,7 +466,7 @@ Public MustInherit Class DataSourceHelper
                         ' Cycle rows and for each row to delete extract the pairs key
                         For Each Row As DataRow In Source.Rows
                             ' Exctract the current primary keys and delete the items inside the subordinate
-                            Dim CurrentClauses As DbClauses = DbClauses.Empty.And(Me.ExtractLocalKeysPairs(Row), DbClauses.ComparerType.Equal)
+                            Dim CurrentClauses As DB.Clauses = DB.Clauses.Empty.And(Me.ExtractLocalKeysPairs(Row), DB.Clauses.Comparer.Equal)
                             Subordinate.Delete(CurrentClauses)
                         Next
                     Next
@@ -547,7 +555,7 @@ Public MustInherit Class DataSourceHelper
 
 
     ' Update command
-    Public Overrides Function Update(Values As Dictionary(Of String, Object), Clauses As SCFramework.DbClauses) As Long
+    Public Overrides Function Update(Values As Dictionary(Of String, Object), Clauses As DB.Clauses) As Long
         ' Check for safety
         If (Me.Safety) And (Clauses Is Nothing OrElse Clauses.IsEmpty) Then
             Throw New Exception("This command will update all row in the table!")
@@ -606,7 +614,7 @@ Public MustInherit Class DataSourceHelper
         If Not Me.IsMemoryManaged Then Exit Sub
 
         ' Get the current query object and determine if must manage the transaction
-        Dim Query As SCFramework.DbQuery = Me.Query
+        Dim Query As DB.Query = Me.Query
         Dim TransactionOwner As Boolean = Not Query.InTransaction
 
         Try

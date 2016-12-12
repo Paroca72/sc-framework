@@ -19,7 +19,7 @@ Public Class Translations
 
 #Region " OVERRIDES "
 
-    Public Overrides Function GetTableName() As String
+    Public Overrides Function Name() As String
         Return "SYS_TRANSLATIONS"
     End Function
 

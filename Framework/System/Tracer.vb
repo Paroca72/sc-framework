@@ -18,7 +18,7 @@ Public Class Tracer
 #Region " MUST OVERRIDES "
 
     ' Define the linked databse table name
-    Public Overrides Function GetTableName() As String
+    Public Overrides Function Name() As String
         Return "SYS_LOGTRACER"
     End Function
 
@@ -53,12 +53,12 @@ Public Class Tracer
     ' Delete all trace in the history.
     ' Note that if you not disable the auto-safe before call this method it will throw an exception.
     Public Overloads Function Delete() As Long
-        Return MyBase.Delete(Nothing)
+        Return MyBase.Delete(DB.Clauses.AlwaysTrue)
     End Function
 
     ' Delete the trace log filtered by the type.
     Public Overloads Function Delete(ActionFilter As Tracer.Actions) As Long
-        Return Me.Delete(New DbClauses("TYPE", DbClauses.ComparerType.Equal, ActionFilter))
+        Return Me.Delete(New DB.Clauses("TYPE", DB.Clauses.Comparer.Equal, ActionFilter))
     End Function
 
 #End Region

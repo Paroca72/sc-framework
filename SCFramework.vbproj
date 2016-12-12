@@ -74,9 +74,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controls\MultilanguageEditor\MultilanguageEditor.vb" />
-    <Compile Include="Framework\Database\DbSqlBuilder.vb" />
-    <Compile Include="Framework\Database\DbClauses.vb" />
-    <Compile Include="Framework\Database\DbHelper.vb" />
+    <Compile Include="Framework\Database\Column.vb" />
+    <Compile Include="Framework\Database\SqlBuilder.vb" />
+    <Compile Include="Framework\Database\Clauses.vb" />
+    <Compile Include="Framework\Database\Table.vb" />
     <Compile Include="Framework\Base\MasterPage.vb">
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
@@ -86,7 +87,9 @@
     <Compile Include="Framework\Base\UserControl.vb">
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
-    <Compile Include="Framework\Database\DbHelperExtended.vb" />
+    <Compile Include="Framework\Database\HelperExtended.vb" />
+    <Compile Include="Framework\Database\Cell.vb" />
+    <Compile Include="Framework\Database\Row.vb" />
     <Compile Include="Framework\Localization\Multilanguages.vb" />
     <Compile Include="Framework\System\Tracer.vb" />
     <Compile Include="Framework\System\Stats.vb" />
@@ -99,7 +102,7 @@
     <Compile Include="Framework\Localization\Translations.vb" />
     <Compile Include="Framework\Users\User.vb" />
     <Compile Include="Framework\Global\Crypt.vb" />
-    <Compile Include="Framework\Database\DbQuery.vb" />
+    <Compile Include="Framework\Database\Query.vb" />
     <Compile Include="Framework\Global\Utils.vb" />
     <Compile Include="Framework\Global\Images.vb" />
     <Compile Include="Framework\Global\LogFile.vb" />

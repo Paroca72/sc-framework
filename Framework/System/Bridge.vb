@@ -106,13 +106,12 @@ Public Class Bridge
 
     ' Get the Query object from the current context page if exists. 
     ' If Not, create a New one.
-    Public Shared Function Query() As SCFramework.DbQuery
+    Public Shared Function Query() As SCFramework.DB.Query
         If Bridge.BasePage IsNot Nothing Then
             Dim [Page] As Page = CType(Bridge.Page, Page)
             Return [Page].Query
         Else
-            Dim DB As SCFramework.DbQuery = New SCFramework.DbQuery
-            Return DB
+            Return New SCFramework.DB.Query
         End If
     End Function
 
